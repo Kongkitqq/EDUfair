@@ -18,20 +18,20 @@ const cors = require('cors');
 
 // Database configuration
 const pool = new Pool({
-    user: 'edufair',
-    host: 'eilapgsql.in.psu.ac.th',
-    database: 'edufair',
-    password: 'n8&U{s{332',
-    port: 5432,
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_NAME,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
+    ssl: process.env.DB_SSL === 'true'
 });
 app.use(cors({
-    origin: 'http://127.0.0.1:5502',
+origin: ['http://internal.psu.ac.th', 'https://internal.psu.ac.th'],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
 app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
 // Middleware
-app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -58,7 +58,14 @@ const upload = multer({
     },
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
-
+app.get('/', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT NOW()');
+        res.send(`Current time from DB: ${result.rows[0].now}`);
+    } catch (err) {
+        res.status(500).send(`Error connecting to database: ${err.message}`);
+    }
+});
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(`Error in ${req.method} ${req.url}:`, err.stack);
