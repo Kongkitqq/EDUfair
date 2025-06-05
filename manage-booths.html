@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการบูธ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for booth grid cells */
+        .booth-grid-cell {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-width: 1px;
+            font-size: 0.70rem;
+            line-height: 1rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: 0.125rem;
+        }
+
+        .available-booth {
+            background-color: #ffffff;
+            border-color: #e5e7eb;
+            color: #6b7280;
+            cursor: pointer;
+        }
+        .available-booth:hover, .available-booth.selected-for-creation {
+            background-color: #dbeafe;
+            border-color: #93c5fd;
+        }
+        .available-booth.selected-for-creation {
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+
+        .existing-booth {
+            background-color: #f3f4f6;
+            border-color: #d1d5db;
+            color: #4b5563;
+            cursor: not-allowed;
+        }
+
+        .added-in-session {
+            background-color: #d1fae5;
+            border-color: #6ee7b7;
+            color: #065f46;
+            font-weight: 600;
+            cursor: default;
+        }
+        .cell-loading .spinner {
+            width: 1rem; height: 1rem;
+            border-top-color: #3b82f6;
+            border-right-color: transparent;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .modal.hidden { display: none; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+    <div class="container mx-auto p-4 sm:p-6">
+        <div id="configNav" class="mb-4">
+            <button id="homeButton" class="bg-gray-500 text-white px-3 py-2 rounded-md hover:bg-gray-600 flex items-center focus:ring-2 focus:ring-gray-500">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                กลับสู่หน้าหลัก
+            </button>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold mb-6 text-gray-700">จัดการบูธ</h1>
+        <button id="createBoothButton" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md shadow-sm mb-6 inline-flex items-center text-sm sm:text-base">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+            </svg>
+            สร้างบูธใหม่จากแผนผัง
+        </button>
+
+        <div class="overflow-x-auto bg-white shadow-md rounded-lg">
+            <table id="boothTable" class="w-full min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="py-3 px-4 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัสบูธ</th>
+                        <th class="py-3 px-4 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ตำแหน่ง</th>
+                        <th class="py-3 px-4 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
+                        <th class="py-3 px-4 sm:px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">การดำเนินการ</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="createBoothModal" class="modal hidden fixed inset-0 bg-gray-800 bg-opacity-75 overflow-y-auto h-full w-full flex justify-center items-center p-4 z-50">
+        <div class="bg-white p-5 sm:p-6 rounded-lg shadow-xl w-full max-w-2xl md:max-w-3xl">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-800">สร้างบูธใหม่จากแผนผัง</h2>
+                <button id="closeCreateModalButton" aria-label="Close create booth modal" class="text-gray-400 hover:text-gray-600 text-2xl sm:text-3xl leading-none">×</button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
+                <div class="md:col-span-2">
+                    <div id="boothCreationGridInfo" class="mb-2 text-xs text-gray-600 flex flex-wrap gap-x-2 gap-y-1">
+                        <span class="flex items-center"><span class="inline-block w-3 h-3 mr-1 border border-gray-300 bg-white"></span> ว่าง</span>
+                        <span class="flex items-center"><span class="inline-block w-3 h-3 mr-1 border border-blue-300 bg-blue-100"></span> เลือกแล้ว</span>
+                        <span class="flex items-center"><span class="inline-block w-3 h-3 mr-1 border border-green-300 bg-green-100"></span> สร้างแล้ว</span>
+                        <span class="flex items-center"><span class="inline-block w-3 h-3 mr-1 border border-gray-300 bg-gray-100"></span> มีอยู่แล้ว</span>
+                    </div>
+                    <div id="boothCreationGrid" class="grid grid-cols-10 gap-px bg-gray-300 border border-gray-300 rounded-sm overflow-hidden shadow">
+                    </div>
+                </div>
+
+                <div id="boothCreationFormArea" class="space-y-3 p-3 sm:p-4 bg-gray-50 rounded-md shadow">
+                    <h3 class="text-base sm:text-lg font-medium text-gray-700 border-b border-gray-300 pb-2 mb-3">รายละเอียดบูธ</h3>
+                    <div>
+                        <label class="block text-xs sm:text-sm font-medium text-gray-700">ตำแหน่งที่เลือก:</label>
+                        <span id="selectedCellDisplay" class="text-sm sm:text-base text-indigo-700 font-semibold h-6 block">ยังไม่ได้เลือก</span>
+                    </div>
+                    <div>
+                        <label for="newBoothIdInput" class="block text-xs sm:text-sm font-medium text-gray-700">รหัสบูธ:</label>
+                        <input type="text" id="newBoothIdInput" name="booth_id" placeholder="เช่น B080 หรือ B0101"
+                               class="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" disabled>
+                    </div>
+                    <button type="button" id="confirmNewBoothButton"
+                            class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-3 sm:px-4 rounded-md shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center text-sm sm:text-base"
+                            disabled>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 sm:mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                        เพิ่มบูธนี้
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button type="button" id="cancelCreateBooth" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md shadow-sm text-sm sm:text-base">ปิด</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="editBoothModal" class="modal hidden fixed inset-0 bg-gray-800 bg-opacity-75 overflow-y-auto h-full w-full flex justify-center items-center p-4 z-50">
+        <div class="bg-white p-5 sm:p-6 rounded-lg shadow-xl w-full max-w-md">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl sm:text-2xl font-semibold text-gray-800">แก้ไขบูธ</h2>
+                <button id="closeEditModalButton" aria-label="Close edit booth modal" class="text-gray-400 hover:text-gray-600 text-2xl sm:text-3xl leading-none">×</button>
+            </div>
+            <form id="editBoothForm" class="space-y-4">
+                <input type="hidden" id="edit_booth_id_hidden" name="booth_id">
+                <div>
+                    <label for="edit_location" class="block text-sm font-medium text-gray-700 mb-1">ตำแหน่ง:</label>
+                    <input type="text" id="edit_location" name="location" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                </div>
+                <div>
+                    <label for="edit_status" class="block text-sm font-medium text-gray-700 mb-1">สถานะ:</label>
+                    <select id="edit_status" name="status"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        <option value="available">ว่าง</option>
+                        <option value="booked">จองแล้ว</option>
+                    </select>
+                </div>
+                <div class="mt-8 flex justify-end space-x-3">
+                    <button type="button" id="cancelEditBooth" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-md shadow-sm text-sm sm:text-base">ยกเลิก</button>
+                    <button type="submit" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-md shadow-sm text-sm sm:text-base">บันทึก</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://localhost:3000';
+        const ADMIN_USER_ID = 'U001'; // เปลี่ยนเป็น user_id จริงของ admin
+
+        const createBoothModalElement = document.getElementById('createBoothModal');
+        const editBoothModalElement = document.getElementById('editBoothModal');
+        const boothCreationGridElement = document.getElementById('boothCreationGrid');
+        const mainBoothTableBody = document.querySelector('#boothTable tbody');
+        const selectedCellDisplayElement = document.getElementById('selectedCellDisplay');
+        const newBoothIdInputElement = document.getElementById('newBoothIdInput');
+        const confirmNewBoothButtonElement = document.getElementById('confirmNewBoothButton');
+
+        let existingBoothsMap = new Map();
+        let boothsAddedInCurrentSession = new Map();
+        let currentSelectedGridCellForCreation = null;
+
+        function showModal(modalElement) { modalElement.classList.remove('hidden'); }
+        function hideModal(modalElement) { modalElement.classList.add('hidden'); }
+
+       async function initializeCreateBoothModal() {
+    boothsAddedInCurrentSession.clear();
+    currentSelectedGridCellForCreation = null;
+    resetCreateBoothFormArea();
+    boothCreationGridElement.innerHTML = `<div class="col-span-10 flex justify-center items-center h-32 text-gray-500">กำลังโหลดแผนผัง...</div>`;
+    showModal(createBoothModalElement);
+    try {
+        await fetchExistingBoothsForGrid();
+        generateBoothCreationGridVisuals();
+        loadBoothTable();
+    } catch (error) {
+        alert('ไม่สามารถโหลดข้อมูลกริดได้: ' + error.message);
+    }
+}
+        function resetCreateBoothFormArea() {
+            selectedCellDisplayElement.textContent = 'ยังไม่ได้เลือก';
+            newBoothIdInputElement.value = '';
+            newBoothIdInputElement.disabled = true;
+            confirmNewBoothButtonElement.disabled = true;
+            if (currentSelectedGridCellForCreation) {
+                currentSelectedGridCellForCreation.classList.remove('selected-for-creation');
+            }
+            currentSelectedGridCellForCreation = null;
+        }
+
+        async function fetchExistingBoothsForGrid() {
+    existingBoothsMap.clear();
+    try {
+        const response = await fetch(`${BASE_URL}/booths`);
+        if (!response.ok) throw new Error('ไม่สามารถดึงข้อมูลบูธที่มีอยู่ได้');
+        const booths = await response.json();
+        console.log('Fetched booths for grid:', booths);
+        booths.forEach(booth => {
+            let match;
+            // รองรับ "Row X Column Y", "Row X Col Y", "Row X, Col Y", "Row X,Col Y"
+            match = booth.location.match(/Row (\d+)(?:,)?\s*(Column|Col)\s*(\d+)/i);
+            if (match) {
+                const row = parseInt(match[1]);
+                const col = parseInt(match[3]);
+                const locationKey = `R${row}C${col}`;
+                // เก็บข้อมูลบูธ ถ้ามี location ซ้ำ ให้เก็บเป็น array
+                if (existingBoothsMap.has(locationKey)) {
+                    const existing = existingBoothsMap.get(locationKey);
+                    if (Array.isArray(existing)) {
+                        existing.push({ id: booth.booth_id, status: booth.status });
+                    } else {
+                        existingBoothsMap.set(locationKey, [existing, { id: booth.booth_id, status: booth.status }]);
+                    }
+                } else {
+                    existingBoothsMap.set(locationKey, { id: booth.booth_id, status: booth.status });
+                }
+            } else {
+                console.warn('Invalid location format for booth:', booth.location);
+            }
+        });
+    } catch (error) {
+        console.error("Error fetching existing booths for grid:", error);
+        boothCreationGridElement.innerHTML = `<div class="col-span-10 flex justify-center items-center h-32 text-red-500">เกิดข้อผิดพลาดในการโหลดแผนผัง: ${error.message}</div>`;
+        throw error;
+    }
+}
+function generateBoothCreationGridVisuals() {
+    boothCreationGridElement.innerHTML = '';
+    for (let r = 1; r <= 10; r++) {
+        for (let c = 1; c <= 10; c++) {
+            const cell = document.createElement('div');
+            cell.classList.add('booth-grid-cell');
+            cell.dataset.row = r;
+            cell.dataset.col = c;
+            const locationKey = `R${r}C${c}`;
+            const addedBoothIdInSession = boothsAddedInCurrentSession.get(locationKey);
+            const existingBoothData = existingBoothsMap.get(locationKey);
+
+            if (addedBoothIdInSession) {
+                cell.classList.add('added-in-session');
+                cell.textContent = addedBoothIdInSession.substring(0, 5);
+                cell.title = `สร้างใหม่ในเซสชัน: ${addedBoothIdInSession}`;
+            } else if (existingBoothData) {
+                cell.classList.add('existing-booth');
+                if (Array.isArray(existingBoothData)) {
+                    // ถ้ามีหลายบูธในตำแหน่งเดียวกัน
+                    cell.textContent = existingBoothData[0].id.substring(0, 5);
+                    const boothDetails = existingBoothData.map(b => `${b.id} (${b.status})`).join(', ');
+                    cell.title = `มีอยู่แล้ว: ${boothDetails}`;
+                } else {
+                    cell.textContent = existingBoothData.id.substring(0, 5);
+                    cell.title = `มีอยู่แล้ว: ${existingBoothData.id} (${existingBoothData.status})`;
+                }
+            } else {
+                cell.classList.add('available-booth');
+                cell.innerHTML = `<span class="text-lg font-light text-gray-400 group-hover:text-blue-500">${r}-${c}</span>`;
+                cell.title = `ว่าง - คลิกเพื่อสร้างบูธที่ แถว ${r}, คอลัมน์ ${c}`;
+                cell.addEventListener('click', handleGridCellClickForForm);
+            }
+            boothCreationGridElement.appendChild(cell);
+        }
+    }
+}
+
+        function handleGridCellClickForForm(event) {
+            const clickedCell = event.currentTarget;
+            if (clickedCell.classList.contains('existing-booth') || clickedCell.classList.contains('added-in-session')) {
+                return;
+            }
+
+            if (currentSelectedGridCellForCreation) {
+                currentSelectedGridCellForCreation.classList.remove('selected-for-creation');
+            }
+
+            clickedCell.classList.add('selected-for-creation');
+            currentSelectedGridCellForCreation = clickedCell;
+
+            const r = clickedCell.dataset.row;
+            const c = clickedCell.dataset.col;
+            selectedCellDisplayElement.textContent = `แถว ${r}, คอลัมน์ ${c}`;
+
+            newBoothIdInputElement.value = `B${r.toString().padStart(2, '0')}${c.toString().padStart(2, '0')}`;
+            newBoothIdInputElement.disabled = false;
+            newBoothIdInputElement.focus();
+            newBoothIdInputElement.select();
+
+            confirmNewBoothButtonElement.disabled = newBoothIdInputElement.value.trim() === '';
+        }
+
+        newBoothIdInputElement.addEventListener('input', () => {
+            confirmNewBoothButtonElement.disabled = newBoothIdInputElement.value.trim() === '' || !currentSelectedGridCellForCreation;
+        });
+
+       confirmNewBoothButtonElement.addEventListener('click', async () => {
+    if (!currentSelectedGridCellForCreation || newBoothIdInputElement.value.trim() === '') {
+        alert('กรุณาเลือกตำแหน่งและระบุรหัสบูธ');
+        return;
+    }
+
+    const row = currentSelectedGridCellForCreation.dataset.row;
+    const col = currentSelectedGridCellForCreation.dataset.col;
+    const boothId = newBoothIdInputElement.value.trim();
+    const location = `Row ${row} Column ${col}`; // ใช้ "Column" เป็นมาตรฐาน
+    const locationKey = `R${row}C${col}`;
+
+    const originalButtonText = confirmNewBoothButtonElement.innerHTML;
+    confirmNewBoothButtonElement.disabled = true;
+    confirmNewBoothButtonElement.innerHTML = `<div class="spinner rounded-full border-2 inline-block mr-2"></div>กำลังเพิ่ม...`;
+
+    try {
+        const response = await fetch(`${BASE_URL}/booths`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ booth_id: boothId, location: location, user_id: ADMIN_USER_ID, status: 'available' })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ' }));
+            throw new Error(errorData.error || `Server error: ${response.statusText}`);
+        }
+
+        const newBooth = await response.json();
+        currentSelectedGridCellForCreation.classList.remove('available-booth', 'selected-for-creation');
+        currentSelectedGridCellForCreation.classList.add('added-in-session');
+        currentSelectedGridCellForCreation.textContent = boothId.substring(0, 5);
+        currentSelectedGridCellForCreation.title = `สร้างใหม่: ${boothId}`;
+        currentSelectedGridCellForCreation.removeEventListener('click', handleGridCellClickForForm);
+
+        boothsAddedInCurrentSession.set(locationKey, boothId);
+        existingBoothsMap.set(locationKey, { id: boothId, status: 'available' });
+
+        resetCreateBoothFormArea();
+        loadBoothTable();
+        alert(`บูธ ${boothId} ถูกสร้างเรียบร้อยแล้ว`);
+    } catch (error) {
+        console.error('Error creating booth:', error);
+        alert(`สร้างบูธ ${boothId} ไม่สำเร็จ: ${error.message}`);
+    } finally {
+        confirmNewBoothButtonElement.disabled = !currentSelectedGridCellForCreation || newBoothIdInputElement.value.trim() === '';
+        confirmNewBoothButtonElement.innerHTML = originalButtonText;
+    }
+});
+
+        document.getElementById('createBoothButton').addEventListener('click', initializeCreateBoothModal);
+        document.getElementById('closeCreateModalButton').addEventListener('click', () => hideModal(createBoothModalElement));
+        document.getElementById('cancelCreateBooth').addEventListener('click', () => hideModal(createBoothModalElement));
+
+        async function loadBoothTable() {
+            try {
+                const response = await fetch(`${BASE_URL}/booths`);
+                if (!response.ok) throw new Error(`ไม่สามารถโหลดข้อมูลบูธ: ${response.statusText}`);
+                const booths = await response.json();
+                mainBoothTableBody.innerHTML = '';
+                if (booths.length === 0) {
+                    mainBoothTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-gray-500">ยังไม่มีข้อมูลบูธ</td></tr>`;
+                } else {
+                    booths.forEach(booth => {
+                        const row = mainBoothTableBody.insertRow();
+                        row.className = 'hover:bg-gray-50';
+                        row.innerHTML = `
+                            <td class="py-3 px-4 sm:px-6 text-sm text-gray-900 break-all">${booth.booth_id}</td>
+                            <td class="py-3 px-4 sm:px-6 text-sm text-gray-500">${booth.location || '-'}</td>
+                            <td class="py-3 px-4 sm:px-6 text-sm">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                    booth.status === 'available' ? 'bg-green-100 text-green-800' : (booth.status === 'booked' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800')
+                                }">
+                                    ${booth.status === 'available' ? 'ว่าง' : (booth.status === 'booked' ? 'จองแล้ว' : (booth.status || 'ไม่ระบุ'))}
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 sm:px-6 text-sm font-medium space-x-2 whitespace-nowrap">
+                                <button onclick="openEditModal('${booth.booth_id}')" class="text-indigo-600 hover:text-indigo-900">แก้ไข</button>
+                                <button onclick="deleteBooth('${booth.booth_id}')" class="text-red-600 hover:text-red-900">ลบ</button>
+                            </td>
+                        `;
+                    });
+                }
+                // อัปเดตกริดหลังจากโหลดตาราง
+                await fetchExistingBoothsForGrid();
+                generateBoothCreationGridVisuals();
+            } catch (error) {
+                console.error('Error loading booths:', error);
+                mainBoothTableBody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-red-500">เกิดข้อผิดพลาดในการโหลดข้อมูลบูธ</td></tr>`;
+            }
+        }
+
+        const editForm = document.getElementById('editBoothForm');
+        const editBoothIdHiddenInput = document.getElementById('edit_booth_id_hidden');
+
+        async function openEditModal(booth_id) {
+            try {
+                const response = await fetch(`${BASE_URL}/booths/${booth_id}`);
+                if (!response.ok) throw new Error(`ไม่สามารถโหลดข้อมูลบูธเพื่อแก้ไข: ${response.statusText}`);
+                const booth = await response.json();
+
+                editBoothIdHiddenInput.value = booth.booth_id;
+                editForm.location.value = booth.location;
+                editForm.status.value = booth.status;
+                showModal(editBoothModalElement);
+                editForm.location.focus();
+            } catch (error) {
+                console.error('Error loading booth for editing:', error);
+                alert('ไม่สามารถโหลดข้อมูลบูธเพื่อแก้ไขได้: ' + error.message);
+            }
+        }
+
+        document.getElementById('closeEditModalButton').addEventListener('click', () => hideModal(editBoothModalElement));
+        document.getElementById('cancelEditBooth').addEventListener('click', () => hideModal(editBoothModalElement));
+
+        editForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const boothData = {
+                location: formData.get('location'),
+                status: formData.get('status')
+            };
+            const booth_id = formData.get('booth_id');
+
+            try {
+                const response = await fetch(`${BASE_URL}/booths/${booth_id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(boothData)
+                });
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ error: 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ' }));
+                    throw new Error(errorData.error || `ไม่สามารถอัปเดตบูธได้: ${response.statusText}`);
+                }
+                hideModal(editBoothModalElement);
+                loadBoothTable();
+                alert('อัปเดตบูธสำเร็จ!');
+            } catch (error) {
+                console.error('Error updating booth:', error);
+                alert('ไม่สามารถอัปเดตบูธได้: ' + error.message);
+            }
+        });
+
+        async function deleteBooth(booth_id) {
+            if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบบูธ ${booth_id}?`)) {
+                try {
+                    const response = await fetch(`${BASE_URL}/booths/${booth_id}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ user_id: ADMIN_USER_ID })
+                    });
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({ error: 'เกิดข้อผิดพลาดไม่ทราบสาเหตุ' }));
+                        throw new Error(errorData.error || `ไม่สามารถลบบูธได้: ${response.statusText}`);
+                    }
+                    loadBoothTable();
+                    alert(`ลบบูธ ${booth_id} สำเร็จ`);
+                } catch (error) {
+                    console.error('Error deleting booth:', error);
+                    alert(`ไม่สามารถลบบูธได้: ${error.message}`);
+                }
+            }
+        }
+
+        const homeButton = document.getElementById("homeButton");
+if (homeButton) {
+    homeButton.addEventListener("click", () => {
+        window.location.href = "index.html"; // Replace with your actual homepage URL
+    });
+}
+        document.addEventListener('DOMContentLoaded', loadBoothTable);
+    </script>
+</body>
+</html>

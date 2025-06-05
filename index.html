@@ -1,0 +1,2460 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบจองบูธ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+    @keyframes marquee {
+        0% { transform: translateX(100%); }
+        100% { transform: translateX(-300%); } /* ปรับตามจำนวนรูป */
+    }
+    .gradient-text {
+            background: linear-gradient(to right, #5c63f4, #0a3fff);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+</style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+<!-- Navbar -->
+<!-- Navbar (จากโค้ดเดิมของคุณ) -->
+<nav class="bg-white shadow-md p-4 sticky top-0 z-50" aria-label="เมนูหลัก">
+    <div class="container mx-auto flex justify-between items-center">
+        <!-- โลโก้และชื่อระบบ -->
+        <a href="/index.html" class="flex items-center space-x-3" aria-label="กลับสู่หน้าหลัก">
+            <img src="public/images/logo.png" alt="โลโก้ระบบจองบูธ" class="h-10 w-auto">
+            <h1 class="text-2xl font-bold text-blue-800">ระบบจองบูธ</h1>
+        </a>
+        <!-- เมนูหลัก -->
+        <div class="hidden md:flex items-center space-x-4">
+            <a href="/index.html" class="text-blue-600 hover:text-blue-800 font-medium text-base aria-current:font-bold" aria-current="page">หน้าหลัก</a>
+            <a href="/booth-map.html" class="text-blue-600 hover:text-blue-800 font-medium text-base">แผนผังบูธ</a>
+            <a href="/bookings.html" class="text-blue-600 hover:text-blue-800 font-medium text-base">รายการจอง</a>
+        </div>
+        <!-- ส่วนผู้ใช้ -->
+         <div id="navUserSection" class="flex items-center space-x-4 hidden">
+            <div class="relative">
+                <button id="notificationIcon" class="relative focus:outline-none" aria-label="การแจ้งเตือน">
+                    <svg class="w-6 h-6 text-blue-600 hover:text-blue-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                    </svg>
+                    <span id="notificationBadge" class="absolute top-0 right-0 h-3 w-3 bg-red-500 rounded-full hidden"></span>
+                </button>
+                <div id="notificationDropdown" class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg p-4 hidden z-10">
+                    <h3 class="text-lg font-semibold mb-2" id="notificationTitle"></h3>
+                    <p id="notificationMessage" class="text-sm text-gray-600 mb-4"></p>
+                    <div class="flex space-x-2 justify-end">
+                        <button id="cancelNotification" class="bg-gray-500 text-white px-3 py-1 rounded-md hover:bg-gray-600 text-sm">ยกเลิก</button>
+                        <button id="actionNotification" class="bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600 text-sm">ไปชำระเงิน</button>
+                    </div>
+                </div>
+            </div>
+            <a href="/profile.html" class="flex items-center space-x-2 hover:bg-blue-100 rounded-md px-3 py-2" aria-label="ไปยังหน้าโปรไฟล์">
+<img id="userAvatar" src="" alt="รูปผู้ใช้" class="w-8 h-8 rounded-full object-cover">
+<span id="userName" class="text-sm font-medium"></span> <!-- เพิ่มส่วนนี้ -->
+            </a>
+            <button id="logoutButton" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 text-base">ออกจากระบบ</button>
+        </div>
+        <!-- Hamburger menu (มือถือ) -->
+        <button id="mobileMenuButton" class="md:hidden focus:outline-none" aria-label="เปิดเมนู">
+            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+            </svg>
+        </button>
+    </div>
+    <!-- เมนูมือถือ -->
+    <div id="mobileMenu" class="md:hidden hidden bg-white shadow-md p-4">
+        <a href="/index.html" class="block text-blue-600 hover:text-blue-800 py-2 text-base" aria-current="page">หน้าหลัก</a>
+        <a href="/booth-map.html" class="block text-blue-600 hover:text-blue-800 py-2 text-base">แผนผังบูธ</a>
+        <a href="/bookings.html" class="block text-blue-600 hover:text-blue-800 py-2 text-base">รายการจอง</a>
+        <a href="/register.html" class="block text-blue-600 hover:text-blue-800 py-2 text-base">สมัครสมาชิก</a>
+    </div>
+</nav>
+
+<!-- Banner Carousel -->
+<div id="bannerCarousel" class="relative w-full h-[150px] md:h-[200px] overflow-hidden z-40">
+    <!-- รูปภาพใน carousel -->
+    <div id="bannerSlides" class="flex transition-transform duration-500">
+        <div class="w-full h-[150px] md:h-[200px] flex-shrink-0 bg-[url('/public/images/banner.jpg')] bg-cover bg-center relative">
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <p class="text-white text-sm md:text-lg font-semibold">งานแสดงสินค้าครั้งที่ 27 จองบูธเลย!</p>
+            </div>
+        </div>
+        <div class="w-full h-[150px] md:h-[200px] flex-shrink-0 bg-[url('/public/images/banner.jpg')] bg-cover bg-center relative">
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <p class="text-white text-sm md:text-lg font-semibold">โปรโมชันพิเศษ วันนี้!</p>
+            </div>
+        </div>
+        <div class="w-full h-[150px] md:h-[200px] flex-shrink-0 bg-[url('/public/images/banner.jpg')] bg-cover bg-center relative">
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+                <p class="text-white text-sm md:text-lg font-semibold">เข้าร่วมงานใหญ่ - สมัครเลย!</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ปุ่มนำทาง -->
+    <button id="prevSlide" class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white p-2 rounded-full opacity-75 hover:opacity-100">
+        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+    </button>
+    <button id="nextSlide" class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-gray-800 text-white p-2 rounded-full opacity-75 hover:opacity-100">
+        <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+    </button>
+
+    <!-- จุดนำทาง -->
+    <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-2">
+        <button class="banner-dot w-2 h-2 md:w-3 md:h-3 bg-gray-400 rounded-full focus:bg-white"></button>
+        <button class="banner-dot w-2 h-2 md:w-3 md:h-3 bg-gray-400 rounded-full focus:bg-white"></button>
+        <button class="banner-dot w-2 h-2 md:w-3 md:h-3 bg-gray-400 rounded-full focus:bg-white"></button>
+    </div>
+</div>
+
+<!-- เนื้อหาหลัก -->
+<div class="container mx-auto p-6 mt-6">
+    <!-- Login Section -->
+    <div id="loginSection" class="bg-white/90 backdrop-blur-md p-6 rounded-lg shadow-md mb-8 relative">
+        <h2 class="text-2xl font-semibold mb-4">เข้าสู่ระบบ</h2>
+        <form id="loginForm" class="space-y-4">
+            <div>
+                <label for="username" class="block text-sm font-medium">ชื่อผู้ใช้</label>
+                <input type="text" id="username" class="w-full p-2 border rounded-md" placeholder="username" required>
+            </div>
+            <div>
+                <label for="password" class="block text-sm font-medium">รหัสผ่าน</label>
+                <input type="password" id="password" class="w-full p-2 border rounded-md" placeholder="password" required>
+            </div>
+            <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:ring-2 focus:ring-blue-500">เข้าสู่ระบบ</button>
+        </form>
+        <p class="mt-4 text-center text-sm">
+            ยังไม่มีบัญชี? <a href="/register.html" class="text-blue-500 hover:underline">สมัครสมาชิก</a>
+        </p>
+    </div>
+</div>
+
+        <!-- Admin Dashboard Section -->
+       <div id="dashboardSection" class="hidden bg-white p-6 rounded-lg shadow-md mb-8">
+    <h1 class="text-3xl font-bold text-center mb-8">แดชบอร์ดผู้ดูแลระบบ</h1>
+    <div class="flex justify-center mb-6 space-x-4">
+        <button id="configButton" class="bg-blue-500 text-white px-6 py-3 rounded-md shadow-md hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 transition duration-300">
+            ตั้งค่าการจองบูธ
+        </button>
+        <a href="manage-booths.html" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+  จัดการบูธ
+</a>    
+  
+    </div>
+   
+    <!-- Booking Table -->
+    <div>
+        <h2 class="text-2xl font-semibold mb-4">ข้อมูลการจอง</h2>
+                <table class="w-full border-collapse bg-white rounded-lg shadow-md">
+                    <thead class="bg-gray-200">
+                        <tr>
+                            <th class="p-2 border">รหัสการจอง</th>
+                            <th class="p-2 border">รหัสบูธ</th>
+                            <th class="p-2 border">จำนวนบูธ</th>
+                            <th class="p-2 border">วันที่จอง</th>
+                            <th class="p-2 border">ป้ายชื่อ</th>
+                            <th class="p-2 border">สถานะ</th>
+                            <th class="p-2 border">จัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bookingTable"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Home Button for Config Section -->
+        <div id="configNav" class="hidden mb-4">
+            <button id="homeButton" class="bg-gray-500 text-white px-3 py-2 rounded-md hover:bg-gray-600 flex items-center focus:ring-2 focus:ring-gray-500">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                </svg>
+                กลับสู่หน้าหลัก
+            </button>
+        </div>
+
+        <!-- Admin Config Section -->
+        <div id="configSection" class="hidden bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-semibold mb-4">ตั้งค่าระบบจองบูธ</h2>
+            <form id="configForm" class="space-y-6">
+                <div>
+                    <h3 class="text-xl font-medium mb-2">ระยะเวลาการเปิดจองบูธสำหรับแต่ละกลุ่ม</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium">มหาวิทยาลัยในเครือข่าย</label>
+                            <input type="datetime-local" name="network_university_start" class="w-full p-2 border rounded-md" required>
+                            <input type="datetime-local" name="network_university_end" class="w-full p-2 border rounded-md mt-2" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium">คณะ/ส่วนงานภายใน ม.อ.</label>
+                            <input type="datetime-local" name="psu_faculty_start" class="w-full p-2 border rounded-md" required>
+                            <input type="datetime-local" name="psu_faculty_end" class="w-full p-2 border rounded-md mt-2" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium">สถาบันการศึกษาทั่วไป</label>
+                            <input type="datetime-local" name="general_institute_start" class="w-full p-2 border rounded-md" required>
+                            <input type="datetime-local" name="general_institute_end" class="w-full p-2 border rounded-md mt-2" required>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium mb-2">ราคาค่าธรรมเนียมบูธ</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium">มหาวิทยาลัยในเครือข่าย</label>
+                            <input type="number" step="0.01" name="network_university_fee" class="w-full p-2 border rounded-md" placeholder="ระบุราคา (บาท)" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium">คณะ/ส่วนงานภายใน ม.อ.</label>
+                            <input type="number" step="0.01" name="psu_faculty_fee" class="w-full p-2 border rounded-md" placeholder="ระบุราคา (บาท)" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium">สถาบันการศึกษาทั่วไป</label>
+                            <input type="number" step="0.01" name="general_institute_fee" class="w-full p-2 border rounded-md" placeholder="ระบุราคา (บาท)" required>
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium mb-2">จำนวนบูธสูงสุดที่สามารถจองได้ต่อคน</h3>
+                    <input type="number" name="booth_max" class="w-full p-2 border rounded-md" placeholder="ระบุจำนวน" required>
+                </div>
+                <div>
+                    <h3 class="text-xl font-medium mb-2">กำหนดราคาขอเพิ่มกำลังวัตต์การใช้ไฟ</h3>
+                    <button type="button" id="addWattageButton" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:ring-2 focus:ring-blue-500">+</button>
+                    <div id="wattageContainer" class="space-y-4 mt-4"></div>
+                </div>
+                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 focus:ring-2 focus:ring-green-500">บันทึกการตั้งค่า</button>
+            </form>
+        </div>
+
+         <!-- Customer Section -->
+        <div id="customerSection" class="hidden">
+<div class="bg-gradient-to-br from-white via-gray-50 to-gray-100 p-6 rounded-lg shadow-md">
+    <div class="overflow-x-auto">
+            <h2 class="text-3xl font-bold text-indigo-800 text-center mb-6 drop-shadow-md py-2 rounded-md">ผังบูธงานนิทรรศการ</h2>
+            <div class="text-center mb-6">
+               <div class="inline-block bg-indigo-700 text-white px-40 py-6 rounded-md text-3xl font-semibold shadow-lg"> Main Stage</div>
+<div class="grid grid-cols-10 mb-6 mt-6">
+  <div class="col-start-2 col-span-2 flex justify-center">
+    <div class="bg-blue-50 px-4 py-2 rounded-lg shadow text-blue-800 font-semibold text-center w-full">
+      Zone A
+    </div>
+  </div>
+  <div class="col-start-5 col-span-2 flex justify-center">
+    <div class="bg-blue-50 px-4 py-2 rounded-lg shadow text-blue-800 font-semibold text-center w-full">
+      Zone B
+    </div>
+  </div>
+  <div class="col-start-8 col-span-2 flex justify-center">
+    <div class="bg-blue-50 px-4 py-2 rounded-lg shadow text-blue-800 font-semibold text-center w-full">
+      Zone C
+    </div>
+  </div>
+</div>
+            </div>
+            <div id="boothMap" class="grid grid-cols-10 gap-2 p-4 min-w-[800px] bg-gray-100"></div>
+        </div>
+       <div class="mt-4 grid grid-cols-10">
+  <div class="col-start-8 col-span-2 flex justify-end">
+    <button id="confirmBoothsButton"
+      class="bg-blue-600 text-white font-medium text-base px-6 py-2.5 rounded-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition-all duration-200 hidden">
+      ยืนยันการเลือกบูธ
+    </button>
+  </div>
+</div>
+    </div>
+</div>
+          <!-- Booking Form Modal -->
+<div id="bookingFormModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden z-50">
+    <div id="bookingFormSection" class="bg-white/50 backdrop-blur-md p-6 rounded-lg shadow-md w-full max-w-lg max-h-[90vh] overflow-y-auto relative">
+        <!-- ปุ่มกากบาท -->
+        <button id="closeBookingModal" class="absolute top-3 right-3 text-gray-600 hover:text-gray-800 focus:outline-none" aria-label="ปิดฟอร์ม">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+        <h2 class="text-2xl font-semibold mb-4">จองบูธ</h2>
+        <form id="bookingForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium">หมายเลขบูธที่จอง</label>
+                <input type="text" id="boothNumbers" class="w-full p-2 border rounded-md" readonly>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">จำนวนบูธที่จอง</label>
+                <input type="number" id="boothQuantity" class="w-full p-2 border rounded-md" readonly>
+            </div>
+            <div id="boothNameplates"></div>
+            <div>
+                <label class="block text-sm font-medium">วันที่/เวลาที่จอง</label>
+                <input type="datetime-local" id="bookingDatetime" class="w-full p-2 border rounded-md" required>
+                <span id="bookingTimeRange" class="text-sm text-gray-500"></span>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">จำนวนเงิน</label>
+                <input type="text" id="totalPrice" class="w-full p-2 border rounded-md" readonly>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">สถานะการจอง</label>
+                <input type="text" id="bookingStatus" class="w-full p-2 border rounded-md" value="pending" readonly>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">วันเวลาที่ทำการจอง</label>
+                <input type="datetime-local" id="createdAt" class="w-full p-2 border rounded-md" readonly>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">การขอใช้ไฟเพิ่มเติม</label>
+                <select name="wattage" id="wattage" class="w-full p-2 border rounded-md">
+                    <option value="0">ไม่เพิ่ม</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">จำนวนผู้เข้าร่วมจัดนิทรรศการ</label>
+                <input type="number" id="staffCount" class="w-full p-2 border rounded-md" min="0" required>
+            </div>
+            <div class="flex space-x-4">
+                <button type="button" id="backButton" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 focus:ring-2 focus:ring-gray-500">ย้อนกลับ</button>
+                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 focus:ring-2 focus:ring-green-500">ยืนยันการจอง</button>
+            </div>
+        </form>
+    </div>
+</div>
+            <div id="myBookingsSection" class="bg-white p-8 rounded-xl shadow-lg mb-10 mt-20 max-w-6xl mx-auto hidden">
+  <h2 class="text-4xl font-semibold text-center text-gray-800 mb-6">การจองของฉัน</h2>
+
+  <div class="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+    <table class="w-full border-collapse bg-white">
+      <thead class="bg-blue-100">
+        <tr>
+          <th class="px-4 py-3 text-left font-medium text-blue-700">รหัสบูธ</th>
+          <th class="px-4 py-3 text-left font-medium text-blue-700">จำนวนเงิน</th>
+          <th class="px-4 py-3 text-left font-medium text-blue-700">สถานะการจอง</th>
+          <th class="px-4 py-3 text-left font-medium text-blue-700">สถานะการชำระ</th>
+          <th class="px-4 py-3 text-left font-medium text-blue-700">จัดการ</th>
+        </tr>
+      </thead>
+      <tbody id="myBookingsTable" class="divide-y divide-gray-100"></tbody>
+    </table>
+  </div>
+
+  <p class="mt-6 text-sm text-blue-600 text-left hover:underline cursor-pointer" onclick="window.location.href='/profile.html'">
+    ดูประวัติการจองทั้งหมด
+  </p>
+</div>
+           <div id="confirmBookingSection" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50 transition-opacity duration-300">
+    <div class="bg-white/90 backdrop-blur-lg p-6 md:p-8 rounded-2xl shadow-2xl w-full max-w-md md:max-w-lg max-h-[90vh] overflow-y-auto transform transition-all duration-300 scale-100">
+        <!-- ปุ่มกากบาท -->
+        <button id="closeConfirmModal" class="absolute top-4 right-4 text-gray-500 hover:text-gray-700 focus:outline-none transition-colors" aria-label="ปิดหน้ายืนยัน">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+
+        
+        <!-- หัวข้อ -->
+        <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center">
+            <svg class="w-6 h-6 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+            </svg>
+            ยืนยันการจอง
+        </h2>
+
+        <!-- ข้อมูลการจอง -->
+        <div class="space-y-4 text-sm md:text-base text-gray-700">
+            <div class="flex items-start">
+                <svg class="w-5 h-5 mr-2 text-gray-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                </svg>
+                <p><strong>หมายเลขบูธ:</strong> <span id="confirmBoothNumbers" class="text-gray-900"></span></p>
+            </div>
+            <div class="flex items-start">
+                <svg class="w-5 h-5 mr-2 text-gray-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                <p><strong>จำนวนบูธ:</strong> <span id="confirmBoothQuantity" class="text-gray-900"></span></p>
+            </div>
+            <div class="flex items-start">
+                <svg class="w-5 h-5 mr-2 text-gray-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                <p><strong>วันที่/เวลา:</strong> <span id="confirmBookingDatetime" class="text-gray-900"></span></p>
+            </div>
+            <div class="flex items-start">
+                <svg class="w-5 h-5 mr-2 text-gray-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p><strong>ราคาพื้นฐาน:</strong> <span id="confirmBasePrice" class="text-gray-900"></span></p>
+            </div>
+            <div class="flex items-start">
+                <svg class="w-5 h-5 mr-2 text-gray-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                <p><strong>ค่าไฟ (Wattage):</strong> <span id="confirmWattageCost" class="text-gray-900"></span></p>
+            </div>
+            <div class="flex items-start">
+                <svg class="w-5 h-5 mr-2 text-gray-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <p><strong>ยอดรวม:</strong> <span id="confirmTotalPrice" class="text-gray-900 font-semibold"></span></p>
+            </div>
+            <div class="flex items-start">
+                <svg class="w-5 h-5 mr-2 text-gray-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                </svg>
+                <p><strong>กำลังไฟ:</strong> <span id="confirmWattage" class="text-gray-900"></span></p>
+            </div>
+            <div class="flex items-start">
+                <svg class="w-5 h-5 mr-2 text-gray-500 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                </svg>
+                <p><strong>จำนวนพนักงาน:</strong> <span id="confirmStaffCount" class="text-gray-900"></span></p>
+            </div>
+            <div id="confirmNameplates" class="border-t pt-4">
+                <p class="font-medium text-gray-800 flex items-center">
+                    <svg class="w-5 h-5 mr-2 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"></path>
+                    </svg>
+                    ป้ายชื่อ
+                </p>
+                <div class="mt-2 space-y-2 pl-7"></div>
+            </div>
+        </div>
+
+        <!-- ปุ่ม -->
+        <div class="mt-8 flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+            <button id="editBookingButton" class="bg-yellow-500 text-white px-6 py-3 rounded-lg hover:bg-yellow-600 focus:ring-2 focus:ring-yellow-500 focus:outline-none transition-all duration-200 flex items-center justify-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                แก้ไข
+            </button>
+            <button id="confirmBookingButton" class="bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 focus:ring-2 focus:ring-green-500 focus:outline-none transition-all duration-200 flex items-center justify-center">
+                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                </svg>
+                ยืนยัน
+            </button>
+        </div>
+    </div>
+</div>
+    <div id="qrCodeSection" class="hidden mt-6">
+        <h3 class="text-xl font-medium mb-2">สแกน QR Code เพื่อชำระเงิน</h3>
+        <figure class="flex flex-col items-center">
+            <div id="qrCode"></div>
+            <figcaption class="text-sm text-gray-500 mt-2">สแกนเพื่อชำระภายใน 24 ชม.</figcaption>
+        </figure>
+    </div>
+        <!-- Edit Booth Modal -->
+        <div id="editBoothModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-4xl">
+                <h3 class="text-xl font-semibold mb-4">แก้ไขข้อมูลบูธ</h3>
+                <form id="editBoothForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium">รหัสบูธ</label>
+                        <input type="text" id="editBoothId" class="w-full p-2 border rounded-md" readonly>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">ตำแหน่ง</label>
+                        <input type="text" id="editBoothLocation" class="w-full p-2 border rounded-md" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium">สถานะ</label>
+                        <select id="editBoothStatus" class="w-full p-2 border rounded-md" required>
+                            <option value="available">ว่าง</option>
+                            <option value="booked">จองแล้ว</option>
+                        </select>
+                    </div>
+                    <div>
+                        <h4 class="text-lg font-medium mb-2">เลือกตำแหน่งจากแผนผัง</h4>
+                        <div id="editBoothMap" class="grid grid-cols-10 gap-2 p-4 min-w-[800px] overflow-x-auto"></div>
+                    </div>
+                    <div class="flex space-x-4">
+                        <button type="button" id="cancelEditBooth" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 focus:ring-2 focus:ring-gray-500">ยกเลิก</button>
+                        <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 focus:ring-2 focus:ring-green-500">บันทึก</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+<!-- Create Booth Modal -->
+<div id="createBoothModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-md max-h-[90vh] overflow-y-auto">
+        <h3 class="text-xl font-semibold mb-4">สร้างบูธใหม่</h3>
+    <form id="createBoothForm">
+            <div>
+                <label class="block text-sm font-medium">รหัสบูธ</label>
+                <input id="createBoothIdInput" type="text" placeholder="รหัสบูธ (เช่น B001)" required class="w-full p-2 border rounded-md" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium">แถว (Row)</label>
+                <select id="createBoothRow" class="w-full p-2 border rounded-md" required>
+                    <option value="" disabled selected>เลือกแถว</option>
+                    <option value="1">Row 1</option>
+                    <option value="2">Row 2</option>
+                    <option value="3">Row 3</option>
+                    <option value="4">Row 4</option>
+                    <option value="5">Row 5</option>
+                    <option value="6">Row 6</option>
+                    <option value="7">Row 7</option>
+                    <option value="8">Row 8</option>
+                    <option value="9">Row 9</option>
+                    <option value="10">Row 10</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium">คอลัมน์ (Column)</label>
+                <select id="createBoothColumn" class="w-full p-2 border rounded-md" required>
+                    <option value="" disabled selected>เลือกคอลัมน์</option>
+                    <option value="1">Column 1</option>
+                    <option value="2">Column 2</option>
+                    <option value="3">Column 3</option>
+                    <option value="4">Column 4</option>
+                    <option value="5">Column 5</option>
+                    <option value="6">Column 6</option>
+                    <option value="7">Column 7</option>
+                    <option value="8">Column 8</option>
+                    <option value="9">Column 9</option>
+                    <option value="10">Column 10</option>
+                    <option value="11">Column 11</option>
+                    <option value="12">Column 12</option>
+                    <option value="13">Column 13</option>
+                    <option value="14">Column 14</option>
+                    <option value="15">Column 15</option>
+                    <option value="16">Column 16</option>
+                    <option value="17">Column 17</option>
+                    <option value="18">Column 18</option>
+                    <option value="19">Column 19</option>
+                    <option value="20">Column 20</option>
+                </select>
+            </div>
+            <div class="flex space-x-4 mt-4">
+                <button type="button" id="cancelCreateBooth" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600">ยกเลิก</button>
+                <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600">สร้าง</button>
+            </div>
+        </form>
+    </div>
+</div>
+        <!-- Notification Modal
+  <div id="notificationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
+        <h3 class="text-xl font-semibold mb-4" id="notificationTitle"></h3>
+        <p id="notificationMessage"></p>
+        <div class="flex space-x-4 mt-4 justify-end">
+            <button id="cancelNotification" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 focus:ring-2 focus:ring-gray-500">ยกเลิก</button>
+            <button id="actionNotification" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:ring-2 focus:ring-blue-500">ตกลง</button>
+        </div>
+    </div>
+</div> -->
+
+
+        <!-- Confirm Booking Modal -->
+        <div id="confirmBookingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
+                <h3 class="text-xl font-semibold mb-4">ยืนยันการจอง</h3>
+                <p>คุณแน่ใจที่จะยืนยันการจองนี้?</p>
+                <div class="flex space-x-4 mt-4">
+                    <button id="cancelConfirmBooking" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 focus:ring-2 focus:ring-gray-500">ยกเลิก</button>
+                    <button id="okConfirmBooking" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 focus:ring-2 focus:ring-green-500">ตกลง</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading Modal -->
+        <div id="loadingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
+                <svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>กำลังโหลด...</span>
+            </div>
+        </div>
+        <div id="confirmAddBoothModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
+        <h3 class="text-xl font-semibold mb-4">ยืนยันการเพิ่มบูธ</h3>
+        <p>คุณแน่ใจที่จะเพิ่มบูธ <span id="confirmBoothId"></span> ที่ตำแหน่ง <span id="confirmBoothLocation"></span>?</p>
+        <div class="flex space-x-4 mt-4">
+            <button id="cancelConfirmAddBooth" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 focus:ring-2 focus:ring-gray-500">ยกเลิก</button>
+            <button id="okConfirmAddBooth" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 focus:ring-2 focus:ring-green-500">ตกลง</button>
+        </div>
+    </div>
+</div>
+
+    </div>
+<!-- Footer -->
+<footer class="bg-gray-800 text-white py-6 mt-8">
+    <div class="container mx-auto px-6">
+        <div class="flex flex-col md:flex-row justify-between items-center">
+            <div class="mb-4 md:mb-0">
+                <h2 class="text-lg font-semibold">ระบบจองบูธ</h2>
+                <p class="text-sm">&copy; 2025 ระบบจองบูธ. สงวนลิขสิทธิ์.</p>
+            </div>
+            <div class="flex space-x-4">
+                <a href="/about.html" class="text-sm hover:text-blue-300">เกี่ยวกับเรา</a>
+                <a href="/contact.html" class="text-sm hover:text-blue-300">ติดต่อเรา</a>
+                <a href="/privacy.html" class="text-sm hover:text-blue-300">นโยบายความเป็นส่วนตัว</a>
+                <a href="/terms.html" class="text-sm hover:text-blue-300">เงื่อนไขการใช้งาน</a>
+            </div>
+        </div>
+        <div class="mt-4 text-center">
+            <p class="text-sm">อีเมล: support@boothbooking.com | โทร: 012-345-6789</p>
+            <p class="text-sm">มหาวิทยาลัยสงขลานครินทร์, ประเทศไทย</p>
+        </div>
+    </div>
+</footer>
+<script>
+let currentUser = JSON.parse(localStorage.getItem('user')) || null; 
+let selectedBooths = [];
+let editingBoothId = null;
+let bookingTimeRange = { start: null, end: null };
+let bookingData = JSON.parse(localStorage.getItem('bookingData')) || null;
+const BASE_URL = 'http://localhost:3000';
+let currentSlide = 0;
+const slides = document.querySelectorAll('#bannerSlides > div');
+const dots = document.querySelectorAll('.banner-dot');
+const totalSlides = slides.length;
+
+document.addEventListener('DOMContentLoaded', () => {
+    // อัปเดตปีใน footer
+    const copyrightYear = document.querySelector('footer p.text-sm');
+    if (copyrightYear) {
+        copyrightYear.innerHTML = `© ${new Date().getFullYear()} ระบบจองบูธ. สงวนลิขสิทธิ์.`;
+    }
+
+    // Banner Carousel
+    function showSlide(index) {
+        currentSlide = (index + totalSlides) % totalSlides;
+        document.getElementById('bannerSlides').style.transform = `translateX(-${currentSlide * 100}%)`;
+        dots.forEach((dot, i) => {
+            dot.classList.toggle('bg-white', i === currentSlide);
+            dot.classList.toggle('bg-gray-400', i !== currentSlide);
+        });
+    }
+
+    const nextSlideBtn = document.getElementById('nextSlide');
+    const prevSlideBtn = document.getElementById('prevSlide');
+    if (nextSlideBtn && prevSlideBtn) {
+        nextSlideBtn.addEventListener('click', () => showSlide(currentSlide + 1));
+        prevSlideBtn.addEventListener('click', () => showSlide(currentSlide - 1));
+    }
+
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => showSlide(index));
+    });
+
+    setInterval(() => showSlide(currentSlide + 1), 5000);
+    showSlide(0);
+const closeConfirmModal = document.getElementById("closeConfirmModal");
+if (closeConfirmModal) {
+    closeConfirmModal.addEventListener("click", () => {
+        const confirmSection = document.getElementById("confirmBookingSection");
+        confirmSection.classList.remove("opacity-100", "scale-100");
+        confirmSection.classList.add("opacity-0", "scale-95");
+        setTimeout(() => {
+            confirmSection.classList.add("hidden");
+            document.getElementById("bookingFormModal").classList.remove("hidden");
+        }, 300);
+    });
+}
+    // ฟังก์ชันทั่วไป
+    function showLoading(show) {
+        const loadingModal = document.getElementById("loadingModal");
+        if (loadingModal) {
+            loadingModal.classList.toggle("hidden", !show);
+        }
+    }
+
+    function showNotification(title, message, actionCallback, actionText = 'ตกลง') {
+        const notificationModal = document.getElementById("notificationModal");
+        const titleEl = document.getElementById("notificationTitle");
+        const messageEl = document.getElementById("notificationMessage");
+        const actionButton = document.getElementById("actionNotification");
+        const cancelButton = document.getElementById("cancelNotification");
+
+        if (!notificationModal || !titleEl || !messageEl || !actionButton || !cancelButton) {
+            console.error('Notification modal elements missing');
+            return;
+        }
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        notificationModal.classList.remove("hidden");
+
+        actionButton.textContent = actionText;
+        actionButton.addEventListener("click", () => {
+            notificationModal.classList.add("hidden");
+            if (actionCallback) actionCallback();
+        }, { once: true });
+
+        cancelButton.addEventListener("click", async () => {
+            notificationModal.classList.add("hidden");
+            if (title === 'การจองค้างชำระ' && confirm('ต้องการยกเลิกการจองค้างชำระนี้หรือไม่?')) {
+                try {
+                    showLoading(true);
+                    const bookingsResponse = await fetch('http://localhost:3000/bookings');
+                    if (!bookingsResponse.ok) throw new Error('Failed to fetch bookings');
+                    const bookings = await bookingsResponse.json();
+                    const pendingBookings = bookings.filter(b => 
+                        b.user_id === currentUser.user_id && 
+                        bookingData.booth_ids.includes(b.booth_id) && 
+                        b.booking_status === 'pending'
+                    );
+
+                    for (const booking of pendingBookings) {
+                        await fetch(`http://localhost:3000/bookings/${booking.booking_id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ...booking, booking_status: 'cancelled', payment_status: 'cancelled' })
+                        });
+
+                        const boothResponse = await fetch(`http://localhost:3000/booths/${booking.booth_id}`);
+                        if (!boothResponse.ok) throw new Error(`Failed to fetch booth ${booking.booth_id}`);
+                        const booth = await boothResponse.json();
+                        await fetch(`http://localhost:3000/booths/${booking.booth_id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ location: booth.location, status: 'available' })
+                        });
+                    }
+
+                    localStorage.removeItem('bookingData');
+                    bookingData = null;
+                    showNotification('สำเร็จ', 'ยกเลิกการจองเรียบร้อย');
+                    await initializeBoothMap();
+                    await updateBookingHistory();
+                } catch (error) {
+                    console.error('Error cancelling booking:', error);
+                    showNotification('เกิดข้อผิดพลาด', `ไม่สามารถยกเลิกการจองได้: ${error.message}`);
+                } finally {
+                    showLoading(false);
+                }
+            }
+        }, { once: true });
+    }
+
+    function showNotificationIcon(title, message, actionCallback, actionText = 'ไปชำระเงิน') {
+        const icon = document.getElementById("notificationIcon");
+        const badge = document.getElementById("notificationBadge");
+        const dropdown = document.getElementById("notificationDropdown");
+        const titleEl = document.getElementById("notificationTitle");
+        const messageEl = document.getElementById("notificationMessage");
+        const actionButton = document.getElementById("actionNotification");
+        const cancelButton = document.getElementById("cancelNotification");
+
+        if (!icon || !badge || !dropdown || !titleEl || !messageEl || !actionButton || !cancelButton) {
+            console.error('Notification elements not found');
+            showNotification('เกิดข้อผิดพลาด', 'ไม่พบองค์ประกอบการแจ้งเตือนในหน้า');
+            return;
+        }
+
+        icon.classList.remove("hidden");
+        badge.classList.remove("hidden");
+
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+        actionButton.textContent = actionText;
+
+        icon.addEventListener("click", () => dropdown.classList.toggle("hidden"), { once: false });
+        document.addEventListener("click", (e) => {
+            if (!dropdown.contains(e.target) && !icon.contains(e.target)) {
+                dropdown.classList.add("hidden");
+            }
+        });
+
+        actionButton.addEventListener("click", () => {
+            dropdown.classList.add("hidden");
+            if (actionCallback) actionCallback();
+        }, { once: true });
+
+        cancelButton.addEventListener("click", async () => {
+            dropdown.classList.add("hidden");
+            if (title === 'การจองค้างชำระ' && confirm('ต้องการยกเลิกการจองค้างชำระนี้หรือไม่?')) {
+                try {
+                    showLoading(true);
+                    const bookingsResponse = await fetch('http://localhost:3000/bookings');
+                    if (!bookingsResponse.ok) throw new Error('Failed to fetch bookings');
+                    const bookings = await bookingsResponse.json();
+                    const pendingBookings = bookings.filter(b => 
+                        b.user_id === currentUser.user_id && 
+                        bookingData.booth_ids.includes(b.booth_id) && 
+                        b.booking_status === 'pending'
+                    );
+
+                    for (const booking of pendingBookings) {
+                        await fetch(`http://localhost:3000/bookings/${booking.booking_id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ...booking, booking_status: 'cancelled', payment_status: 'cancelled' })
+                        });
+
+                        const boothResponse = await fetch(`http://localhost:3000/booths/${booking.booth_id}`);
+                        if (!boothResponse.ok) throw new Error(`Failed to fetch booth ${booking.booth_id}`);
+                        const booth = await boothResponse.json();
+                        await fetch(`http://localhost:3000/booths/${booking.booth_id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ location: booth.location, status: 'available' })
+                        });
+                    }
+
+                    localStorage.removeItem('bookingData');
+                    bookingData = null;
+                    icon.classList.add("hidden");
+                    badge.classList.add("hidden");
+                    showNotification('สำเร็จ', 'ยกเลิกการจองเรียบร้อย');
+                    await initializeBoothMap();
+                    await updateBookingHistory();
+                } catch (error) {
+                    console.error('Error cancelling booking:', error);
+                    showNotification('เกิดข้อผิดพลาด', `ไม่สามารถยกเลิกการจองได้: ${error.message}`);
+                } finally {
+                    showLoading(false);
+                }
+            }
+        }, { once: true });
+    }
+
+    async function checkDuplicateLocation(row, column) {
+        const location = `Row ${row} Column ${column}`;
+        try {
+            const response = await fetch('http://localhost:3000/booths');
+            if (!response.ok) throw new Error('Failed to fetch booths');
+            const booths = await response.json();
+            return booths.some(booth => booth.location === location);
+        } catch (error) {
+            console.error('Error checking location:', error);
+            return false;
+        }
+    }
+
+    function generateBookingId(index) {
+        const timestamp = Date.now().toString().slice(-8);
+        const random = Math.floor(Math.random() * 100).toString().padStart(2, '0');
+        return `BK${timestamp}${index.toString().padStart(2, '0')}${random}`;
+    }
+
+    async function checkPendingBookings() {
+        if (!currentUser || !bookingData) return;
+        try {
+            const bookingsResponse = await fetch('http://localhost:3000/bookings');
+            if (!bookingsResponse.ok) throw new Error('Failed to fetch bookings');
+            const bookings = await bookingsResponse.json();
+            const pendingBookings = bookings.filter(b => 
+                b.user_id === currentUser.user_id && 
+                bookingData.booth_ids.includes(b.booth_id) && 
+                b.booking_status === 'pending' && 
+                b.payment_status === 'pending'
+            );
+
+            if (pendingBookings.length > 0) {
+                showNotificationIcon(
+                    'การจองค้างชำระ',
+                    `คุณมีการจองค้างชำระสำหรับบูธ ${bookingData.booth_ids.join(', ')} กรุณาชำระเงินภายใน ${new Date(new Date(bookingData.created_at).getTime() + 24 * 60 * 60 * 1000).toLocaleString('th-TH')}`,
+                    () => {
+                        window.location.href = 'payment.html';
+                    },
+                    'ไปชำระเงิน'
+                );
+            }
+        } catch (error) {
+            console.error('Error checking pending bookings:', error);
+            showNotification('เกิดข้อผิดพลาด', `ไม่สามารถตรวจสอบการจองค้างชำระได้: ${error.message}`);
+        }
+    }
+
+    async function updateNavbar() {
+        const userData = localStorage.getItem('user');
+        const navUserSection = document.getElementById('navUserSection');
+        const userAvatar = document.getElementById('userAvatar');
+        const userName = document.getElementById('userName');
+
+        if (!userAvatar || !userName || !navUserSection) {
+            console.error('Missing navbar element(s)', { userAvatar, userName, navUserSection });
+            return;
+        }
+
+        if (userData) {
+            let user = JSON.parse(userData);
+
+            if (!user.profile_image) {
+                try {
+                    const response = await fetch(`${BASE_URL}/users/${user.user_id}`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        user.profile_image = data.profile_image || '/images/default-profile.png';
+                        localStorage.setItem('user', JSON.stringify(user));
+                    } else {
+                        console.error('API error:', await response.text());
+                        user.profile_image = '/images/default-profile.png';
+                    }
+                } catch (err) {
+                    console.error('Error fetching user data:', err);
+                    user.profile_image = '/images/default-profile.png';
+                }
+            }
+
+            navUserSection.classList.remove('hidden');
+            userName.textContent = user.username || 'ชื่อผู้ใช้';
+
+            const imgSrc = `${BASE_URL}${user.profile_image}`;
+            userAvatar.src = imgSrc;
+            userAvatar.onerror = () => {
+                console.warn('Failed to load avatar, using default');
+                userAvatar.src = `${BASE_URL}/images/default-profile.png`;
+                userAvatar.onerror = null;
+            };
+        } else {
+            navUserSection.classList.add('hidden');
+            userAvatar.src = `${BASE_URL}/images/default-profile.png`;
+        }
+    }
+
+    // Create Booth Modal
+    const createBoothButton = document.getElementById("createBoothButton");
+    if (createBoothButton) {
+        createBoothButton.addEventListener("click", () => {
+            console.log('Create booth button clicked');
+            const createBoothModal = document.getElementById("createBoothModal");
+            if (createBoothModal) {
+                createBoothModal.classList.remove("hidden");
+                const createBoothIdInput = document.getElementById("createBoothIdInput");
+                const createBoothRow = document.getElementById("createBoothRow");
+                const createBoothColumn = document.getElementById("createBoothColumn");
+                if (createBoothIdInput && createBoothRow && createBoothColumn) {
+                    createBoothIdInput.value = "";
+                    createBoothRow.value = "";
+                    createBoothColumn.value = "";
+                }
+            }
+        });
+    }
+
+    const createBoothForm = document.getElementById("createBoothForm");
+    if (createBoothForm) {
+        createBoothForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const boothId = document.getElementById("createBoothIdInput").value;
+            const row = document.getElementById("createBoothRow").value;
+            const column = document.getElementById("createBoothColumn").value;
+            const location = `Row ${row} Column ${column}`;
+
+            try {
+                showLoading(true);
+                console.log('Creating booth:', { booth_id: boothId, location });
+
+                const isDuplicate = await checkDuplicateLocation(row, column);
+                if (isDuplicate) {
+                    throw new Error(`ตำแหน่ง ${location} มีบูธอยู่แล้ว`);
+                }
+
+                const checkResponse = await fetch('http://localhost:3000/booths');
+                if (!checkResponse.ok) throw new Error('Failed to fetch booths');
+                const booths = await checkResponse.json();
+                if (booths.some(booth => booth.booth_id === boothId)) {
+                    throw new Error(`บูธ ${boothId} มีอยู่ในระบบแล้ว`);
+                }
+
+                const response = await fetch('http://localhost:3000/booths', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ booth_id: boothId, location, status: 'available', user_id: currentUser?.user_id })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to create booth');
+                }
+
+                document.getElementById("createBoothModal").classList.add("hidden");
+                await loadBoothTable();
+                showNotification('สำเร็จ', 'สร้างบูธเรียบร้อย');
+            } catch (error) {
+                console.error('Error creating booth:', error);
+                showNotification('เกิดข้อผิดพลาด', `ไม่สามารถสร้างบูธได้: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        });
+    }
+
+    const cancelCreateBooth = document.getElementById("cancelCreateBooth");
+    if (cancelCreateBooth) {
+        cancelCreateBooth.addEventListener("click", () => {
+            document.getElementById("createBoothModal").classList.add("hidden");
+        });
+    }
+
+    const rowSelect = document.getElementById("createBoothRow");
+    const columnSelect = document.getElementById("createBoothColumn");
+    if (rowSelect && columnSelect) {
+        const checkLocation = async () => {
+            const row = rowSelect.value;
+            const column = columnSelect.value;
+            if (row && column) {
+                const isDuplicate = await checkDuplicateLocation(row, column);
+                if (isDuplicate) {
+                    showNotificationIcon('คำเตือน', `ตำแหน่ง Row ${row}, Column ${column} มีบูธอยู่แล้ว`);
+                }
+            }
+        };
+        rowSelect.addEventListener("change", checkLocation);
+        columnSelect.addEventListener("change", checkLocation);
+    }
+
+    // Login
+    const loginForm = document.getElementById("loginForm");
+    if (loginForm) {
+        loginForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            showLoading(true);
+            const username = document.getElementById("username").value;
+            const password = document.getElementById("password").value;
+            try {
+                const response = await fetch('http://localhost:3000/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Login failed');
+                }
+                const data = await response.json();
+                currentUser = {
+                    user_id: data.user.user_id,
+                    username: data.user.username,
+                    role: data.user.role,
+                    institute_name: data.user.institute_name
+                };
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                document.getElementById("loginSection").classList.add("hidden");
+                document.getElementById("navUserSection").classList.remove("hidden");
+                updateNavbar();
+                bookingData = JSON.parse(localStorage.getItem('bookingData')) || null;
+                if (bookingData) {
+                    await checkPendingBookings();
+                }
+
+                if (data.user.role === 'admin') {
+                    document.getElementById("dashboardSection").classList.remove("hidden");
+                    await initializeAdmin();
+                } else {
+                    document.getElementById("customerSection").classList.remove("hidden");
+                    await initializeBoothMap();
+                    await populateWattageOptions();
+                    await updateBookingHistory();
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showNotification('เกิดข้อผิดพลาด', error.message.includes('Invalid') ? 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' : `ไม่สามารถเข้าสู่ระบบได้: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        });
+    }
+const confirmBookingButton = document.getElementById("confirmBookingButton");
+if (confirmBookingButton) {
+    confirmBookingButton.addEventListener("click", async () => {
+        const button = confirmBookingButton;
+        button.textContent = "กำลังยืนยัน...";
+        button.disabled = true;
+        let createdBookingIds = [];
+
+        try {
+            showLoading(true);
+
+            // ตรวจสอบจำนวนบูธสูงสุด
+            const configResponse = await fetch('http://localhost:3000/config');
+            if (!configResponse.ok) throw new Error('Failed to fetch config');
+            const config = await configResponse.json();
+            const boothMax = config.length > 0 ? config[0].booth_max : 2;
+
+            const bookingsResponse = await fetch('http://localhost:3000/bookings');
+            if (!bookingsResponse.ok) throw new Error('Failed to fetch bookings');
+            const bookings = await bookingsResponse.json();
+            const userBookings = bookings.filter(b => b.booking_status !== 'cancelled' && b.user_id === currentUser.user_id).length;
+
+            if (userBookings + bookingData.booth_quantity > boothMax) {
+                showNotification('เกินจำนวน', `คุณจองบูธครบ ${boothMax} บูธแล้ว!`);
+                return;
+            }
+
+            // ตรวจสอบสถานะบูธ
+            const boothsResponse = await fetch('http://localhost:3000/booths');
+            if (!boothsResponse.ok) throw new Error('Failed to fetch booths');
+            const booths = await boothsResponse.json();
+            const unavailableBooths = bookingData.booth_ids.filter(id => {
+                const booth = booths.find(b => b.booth_id === id);
+                return !booth || booth.status !== 'available';
+            });
+            if (unavailableBooths.length > 0) {
+                showNotification('บูธไม่ว่าง', `บูธ ${unavailableBooths.join(', ')} ถูกจองแล้ว`);
+                return;
+            }
+
+            // บันทึกการจอง
+            const bookingPromises = bookingData.booth_ids.map(async (boothId, index) => {
+                const bookingId = generateBookingId(index);
+                const singleBooking = {
+                    booking_id: bookingId,
+                    booth_id: boothId,
+                    booth_quantity: 1,
+                    booking_datetime: bookingData.booking_datetime,
+                    booth_nameplate: bookingData.booth_nameplates[boothId],
+                    amount: bookingData.amount / bookingData.booth_ids.length,
+                    booking_status: "pending",
+                    payment_status: "pending",
+                    electricity_request: bookingData.electricity_request,
+                    electricity_quantity: bookingData.electricity_quantity,
+                    staff_count: bookingData.staff_count,
+                    user_id: currentUser.user_id,
+                    created_at: bookingData.created_at
+                };
+                const response = await fetch('http://localhost:3000/bookings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(singleBooking)
+                });
+                if (!response.ok) {
+                    const err = await response.json();
+                    throw new Error(err.error || 'Failed to create booking');
+                }
+                return { response, bookingId };
+            });
+
+            const results = await Promise.all(bookingPromises);
+            createdBookingIds = results.map(result => result.bookingId);
+
+            // อัปเดตสถานะบูธ
+            for (const boothId of bookingData.booth_ids) {
+                const booth = booths.find(b => b.booth_id === boothId);
+                await fetch(`http://localhost:3000/booths/${boothId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ location: booth.location, status: 'booked' })
+                });
+            }
+
+            // บันทึก bookingData และเปลี่ยนหน้า
+            localStorage.setItem('bookingData', JSON.stringify(bookingData));
+            selectedBooths = [];
+            document.getElementById("confirmBookingSection").classList.add("hidden");
+            showNotification('สำเร็จ', 'ยืนยันการจองเรียบร้อย!');
+            window.location.href = `payment.html?bookingIds=${createdBookingIds.join(',')}&amount=${bookingData.amount}`;
+        } catch (error) {
+            console.error('Error confirming booking:', error);
+            // Rollback
+            for (const bookingId of createdBookingIds) {
+                try {
+                    await fetch(`http://localhost:3000/bookings/${bookingId}`, {
+                        method: 'DELETE',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const boothId = bookingData.booth_ids[createdBookingIds.indexOf(bookingId)];
+                    const boothResponse = await fetch(`http://localhost:3000/booths/${boothId}`);
+                    if (!boothResponse.ok) throw new Error(`Failed to fetch booth ${boothId}`);
+                    const booth = await boothResponse.json();
+                    await fetch(`http://localhost:3000/booths/${boothId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ location: booth.location, status: 'available' })
+                    });
+                } catch (rollbackError) {
+                    console.error('Rollback failed for booking:', bookingId, rollbackError);
+                }
+            }
+            showNotification('เกิดข้อผิดพลาด', `ไม่สามารถยืนยันการจองได้: ${error.message}`);
+        } finally {
+            button.textContent = "ยืนยัน";
+            button.disabled = false;
+            showLoading(false);
+        }
+    });
+}
+    // Logout
+    const logoutButton = document.getElementById("logoutButton");
+    if (logoutButton) {
+        logoutButton.addEventListener("click", () => {
+            localStorage.removeItem('user');
+            localStorage.removeItem('bookingData');
+            currentUser = null;
+            bookingData = null;
+            document.getElementById("navUserSection").classList.add("hidden");
+            document.getElementById("loginSection").classList.remove("hidden");
+            document.getElementById("customerSection").classList.add("hidden");
+            document.getElementById("dashboardSection").classList.add("hidden");
+            document.getElementById("configSection").classList.add("hidden");
+            document.getElementById("configNav").classList.add("hidden");
+            const notificationIcon = document.getElementById("notificationIcon");
+            const notificationBadge = document.getElementById("notificationBadge");
+            if (notificationIcon) notificationIcon.classList.add("hidden");
+            if (notificationBadge) notificationBadge.classList.add("hidden");
+            location.reload();
+        });
+    }
+
+    // Navigation
+    const configButton = document.getElementById("configButton");
+    if (configButton) {
+        configButton.addEventListener("click", () => {
+            document.getElementById("dashboardSection").classList.add("hidden");
+            document.getElementById("configSection").classList.remove("hidden");
+            document.getElementById("configNav").classList.remove("hidden");
+            showConfigForm();
+        });
+    }
+
+    const homeButton = document.getElementById("homeButton");
+    if (homeButton) {
+        homeButton.addEventListener("click", () => {
+            document.getElementById("configSection").classList.add("hidden");
+            document.getElementById("configNav").classList.add("hidden");
+            document.getElementById("dashboardSection").classList.remove("hidden");
+        });
+    }
+
+    const backButton = document.getElementById("backButton");
+if (backButton) {
+    backButton.addEventListener("click", () => {
+        document.getElementById("bookingFormModal").classList.add("hidden");
+        // ไม่ต้องเรียก initializeBoothMap() เพราะหน้าก่อนหน้ายังคงอยู่
+    });
+}
+const closeBookingModal = document.getElementById("closeBookingModal");
+if (closeBookingModal) {
+    closeBookingModal.addEventListener("click", () => {
+        document.getElementById("bookingFormModal").classList.add("hidden");
+    });
+}
+    const confirmBoothsButton = document.getElementById("confirmBoothsButton");
+    if (confirmBoothsButton) {
+        confirmBoothsButton.addEventListener("click", showBookingForm);
+    }
+
+    const wattageSelect = document.getElementById("wattage");
+    if (wattageSelect) {
+        wattageSelect.addEventListener("change", calculatePrice);
+    }
+
+    const editBookingButton = document.getElementById("editBookingButton");
+if (editBookingButton) {
+    editBookingButton.addEventListener("click", () => {
+        const confirmSection = document.getElementById("confirmBookingSection");
+        confirmSection.classList.remove("opacity-100", "scale-100");
+        confirmSection.classList.add("opacity-0", "scale-95");
+        setTimeout(() => {
+            confirmSection.classList.add("hidden");
+            document.getElementById("bookingFormModal").classList.remove("hidden");
+        }, 300);
+    });
+}
+
+
+    const finalConfirmButton = document.getElementById("finalConfirmButton");
+    if (finalConfirmButton) {
+        finalConfirmButton.addEventListener("click", () => {
+            document.getElementById("confirmBookingModal").classList.remove("hidden");
+        });
+    }
+
+    const cancelConfirmBooking = document.getElementById("cancelConfirmBooking");
+    if (cancelConfirmBooking) {
+        cancelConfirmBooking.addEventListener("click", () => {
+            document.getElementById("confirmBookingModal").classList.add("hidden");
+        });
+    }
+
+    const okConfirmBooking = document.getElementById("okConfirmBooking");
+    if (okConfirmBooking) {
+        okConfirmBooking.addEventListener("click", async () => {
+            const button = document.getElementById("finalConfirmButton");
+            button.textContent = "กำลังยืนยัน...";
+            button.disabled = true;
+            let createdBookingIds = [];
+            try {
+                showLoading(true);
+                document.getElementById("confirmBookingModal").classList.add("hidden");
+
+                const configResponse = await fetch('http://localhost:3000/config');
+                if (!configResponse.ok) throw new Error('Failed to fetch config');
+                const config = await configResponse.json();
+                const boothMax = config.length > 0 ? config[0].booth_max : 2;
+
+                const bookingsResponse = await fetch('http://localhost:3000/bookings');
+                if (!bookingsResponse.ok) throw new Error('Failed to fetch bookings');
+                const bookings = await bookingsResponse.json();
+                const userBookings = bookings.filter(b => b.booking_status !== 'cancelled' && b.user_id === currentUser.user_id).length;
+
+                if (userBookings + bookingData.booth_quantity > boothMax) {
+                    showNotification('เกินจำนวน', `คุณจองบูธครบ ${boothMax} บูธแล้ว!`);
+                    return;
+                }
+
+                const boothsResponse = await fetch('http://localhost:3000/booths');
+                if (!boothsResponse.ok) throw new Error('Failed to fetch booths');
+                const booths = await boothsResponse.json();
+                const unavailableBooths = bookingData.booth_ids.filter(id => {
+                    const booth = booths.find(b => b.booth_id === id);
+                    return !booth || booth.status !== 'available';
+                });
+                if (unavailableBooths.length > 0) {
+                    showNotification('บูธไม่ว่าง', `บูธ ${unavailableBooths.join(', ')} ถูกจองแล้ว`);
+                    return;
+                }
+
+                const bookingPromises = bookingData.booth_ids.map(async (boothId, index) => {
+                    const bookingId = generateBookingId(index);
+                    const singleBooking = {
+                        booking_id: bookingId,
+                        booth_id: boothId,
+                        booth_quantity: 1,
+                        booking_datetime: bookingData.booking_datetime,
+                        booth_nameplate: bookingData.booth_nameplates[boothId],
+                        amount: bookingData.price_per_booth + bookingData.wattage_cost_per_booth,
+                        booking_status: bookingData.booking_status,
+                        payment_status: bookingData.payment_status,
+                        electricity_request: bookingData.electricity_request,
+                        electricity_quantity: bookingData.electricity_quantity,
+                        staff_count: bookingData.staff_count,
+                        user_id: bookingData.user_id
+                    };
+                    console.log('Creating booking:', singleBooking);
+                    const response = await fetch('http://localhost:3000/bookings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(singleBooking)
+                    });
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw new Error(err.error || 'Failed to create booking');
+                    }
+                    createdBookingIds.push(bookingId);
+                    return response;
+                });
+
+                await Promise.all(bookingPromises);
+
+                for (const boothId of bookingData.booth_ids) {
+                    const booth = booths.find(b => b.booth_id === boothId);
+                    await fetch(`http://localhost:3000/booths/${boothId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ location: booth.location, status: 'booked' })
+                    });
+                }
+
+                localStorage.setItem('bookingData', JSON.stringify(bookingData));
+                await updateBookingHistory();
+                initializeBoothMap();
+                selectedBooths = [];
+                document.getElementById("confirmBoothsButton").classList.add("hidden");
+                document.getElementById("confirmBookingSection").classList.add("hidden");
+                window.location.href = 'payment.html';
+            } catch (error) {
+                console.error('Error finalizing booking:', error);
+                for (const bookingId of createdBookingIds) {
+                    try {
+                        await fetch(`http://localhost:3000/bookings/${bookingId}`, {
+                            method: 'DELETE',
+                            headers: { 'Content-Type': 'application/json' }
+                        });
+                        const boothId = bookingData.booth_ids[createdBookingIds.indexOf(bookingId)];
+                        const boothResponse = await fetch(`http://localhost:3000/booths/${boothId}`);
+                        if (!boothResponse.ok) throw new Error(`Failed to fetch booth ${boothId}`);
+                        const booth = await boothResponse.json();
+                        await fetch(`http://localhost:3000/booths/${boothId}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ location: booth.location, status: 'available' })
+                        });
+                    } catch (rollbackError) {
+                        console.error('Rollback failed for booking:', bookingId, rollbackError);
+                    }
+                }
+                showNotificationIcon('เกิดข้อผิดพลาด', `ไม่สามารถจองบูธได้: ${error.message}`);
+            } finally {
+                button.textContent = "ยืนยัน";
+                button.disabled = false;
+                showLoading(false);
+            }
+        });
+    }
+
+    // Booth Map
+    function toggleBoothSelection(boothId) {
+        if (selectedBooths.includes(boothId)) {
+            selectedBooths = selectedBooths.filter(id => id !== boothId);
+        } else {
+            selectedBooths.push(boothId);
+        }
+        document.getElementById("confirmBoothsButton").classList.toggle("hidden", selectedBooths.length === 0);
+    }
+
+  async function initializeBoothMap() {
+    try {
+        showLoading(true);
+        console.log('Fetching booths and bookings');
+        const [boothsResponse, bookingsResponse] = await Promise.all([
+            fetch('http://localhost:3000/booths'),
+            fetch('http://localhost:3000/bookings')
+        ]);
+        if (!boothsResponse.ok) throw new Error('Failed to fetch booths');
+        if (!bookingsResponse.ok) throw new Error('Failed to fetch bookings');
+        const booths = await boothsResponse.json();
+        const bookings = await bookingsResponse.json();
+        console.log('Booths:', booths.length, 'Bookings:', bookings.length);
+
+        let price = 0;
+        if (currentUser && currentUser.institute_name) {
+            try {
+                const instituteResponse = await fetch(`http://localhost:3000/institutes/${encodeURIComponent(currentUser.institute_name)}`);
+                if (!instituteResponse.ok) throw new Error(`Failed to fetch institute: ${currentUser.institute_name}`);
+                const institute = await instituteResponse.json();
+                const typeResponse = await fetch(`http://localhost:3000/types/${institute.type_id}`);
+                if (!typeResponse.ok) throw new Error(`Failed to fetch type: ${institute.type_id}`);
+                const type = await typeResponse.json();
+                price = parseFloat(type.price) || 0;
+            } catch (error) {
+                console.error('Error fetching price:', error);
+                price = 0;
+            }
+        } else {
+            console.warn('No currentUser or institute_name, using default price');
+        }
+
+        const boothMap = document.getElementById("boothMap");
+        if (boothMap) {
+            boothMap.innerHTML = "";
+            selectedBooths = [];
+
+            const alertDiv = document.createElement("div");
+            alertDiv.id = "boothMapAlert";
+            alertDiv.className = "hidden text-red-600 text-sm mb-2";
+            boothMap.appendChild(alertDiv);
+
+            // ตรวจสอบ location ที่ไม่ถูกต้อง
+            const invalidBooths = booths.filter(booth => {
+                if (!booth.location) return true;
+                const match = booth.location.match(/Row (\d+)(?:,)?\s*(Column|Col)\s*(\d+)/i);
+                return !match;
+            });
+            if (invalidBooths.length > 0) {
+                console.warn('Invalid booth locations:', invalidBooths);
+                alertDiv.textContent = `มี ${invalidBooths.length} บูธที่มีตำแหน่งไม่ถูกต้อง: ${invalidBooths.map(b => b.booth_id).join(', ')}`;
+                alertDiv.classList.remove("hidden");
+                setTimeout(() => alertDiv.classList.add("hidden"), 5000);
+            }
+
+            // หาค่าสูงสุดของแถวและคอลัมน์
+            let maxRow = 10, maxCol = 10;
+            booths.forEach(booth => {
+                const match = booth.location?.match(/Row (\d+)(?:,)?\s*(Column|Col)\s*(\d+)/i);
+                if (match) {
+                    const row = parseInt(match[1]);
+                    const col = parseInt(match[3]);
+                    maxRow = Math.max(maxRow, row);
+                    maxCol = Math.max(maxCol, col);
+                }
+            });
+
+            // สร้างตาราง grid
+            boothMap.className = "grid gap-2 p-4";
+            boothMap.style.gridTemplateColumns = `repeat(${maxCol}, minmax(80px, 1fr))`;
+
+            // สร้างแถวและบูธ
+            for (let row = 1; row <= maxRow; row++) {
+                for (let col = 1; col <= maxCol; col++) {
+                    const booth = booths.find(b => {
+                        const match = b.location?.match(/Row (\d+)(?:,)?\s*(Column|Col)\s*(\d+)/i);
+                        return match && parseInt(match[1]) === row && parseInt(match[3]) === col;
+                    });
+
+                    const boothDiv = document.createElement("div");
+boothDiv.className = "p-2 rounded text-sm text-center relative group";
+
+if (booth) {
+    const booking = bookings.find(b => b.booth_id === booth.booth_id && b.booking_status !== 'cancelled');
+    let status = booth.status;
+    let statusText = 'ว่าง';
+    let bgColor = 'bg-green-200';
+    let cursorStyle = 'cursor-pointer';
+
+    if (booking) {
+        if (booking.booking_status === 'pending') {
+            status = 'pending';
+            statusText = 'รออนุมัติ';
+            bgColor = 'bg-yellow-200';
+            cursorStyle = 'cursor-not-allowed';
+        } else if (booking.booking_status === 'confirmed' && booking.payment_status === 'pending') {
+            status = 'confirmed';
+            statusText = 'รอชำระ';
+            bgColor = 'bg-orange-200';
+            cursorStyle = 'cursor-not-allowed';
+        } else if (booking.booking_status === 'confirmed' && booking.payment_status === 'paid') {
+            status = 'booked';
+            statusText = 'จองแล้ว';
+            bgColor = 'bg-red-200';
+            cursorStyle = 'cursor-not-allowed';
+        }
+    }
+
+    boothDiv.className += ` ${bgColor} ${cursorStyle} ${selectedBooths.includes(booth.booth_id) ? 'border-2 border-blue-500' : ''}`;
+    boothDiv.innerHTML = `
+        <p>${booth.booth_id}</p>
+        <p>${statusText}</p>
+        <div class="absolute hidden group-hover:block bg-gray-800 text-white text-xs rounded py-1 px-2 bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-10 whitespace-nowrap">
+            ราคา: ${price.toFixed(2)} บาท<br>สถานะ: ${statusText}<br>ตำแหน่ง: ${booth.location}
+        </div>
+    `;
+    boothDiv.addEventListener("click", () => {
+        if (status === 'available') {
+            toggleBoothSelection(booth.booth_id);
+            boothDiv.classList.toggle('border-2');
+            boothDiv.classList.toggle('border-blue-500');
+        } else {
+            const boothStatusModal = document.getElementById("boothStatusModal");
+            const boothStatusMessage = document.getElementById("boothStatusMessage");
+            const closeBoothStatusModal = document.getElementById("closeBoothStatusModal");
+            if (boothStatusModal && boothStatusMessage && closeBoothStatusModal) {
+                boothStatusMessage.textContent = `บูธ ${booth.booth_id} อยู่ในสถานะ: ${statusText}`;
+                boothStatusModal.classList.remove("hidden");
+                boothStatusModal.focus(); // ให้ modal อยู่ด้านหน้า
+                closeBoothStatusModal.addEventListener("click", () => {
+                    boothStatusModal.classList.add("hidden");
+                }, { once: true });
+            } else {
+                console.error("Booth status modal elements not found");
+            }
+        }
+    });
+} else {
+    boothDiv.className += " bg-white-100";
+}
+boothMap.appendChild(boothDiv);
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading booth map:', error);
+        showNotification('เกิดข้อผิดพลาด', `ไม่สามารถโหลดแผนผังบูธได้: ${error.message}`);
+    } finally {
+        showLoading(false);
+    }
+}
+    // Wattage Options
+    async function populateWattageOptions() {
+        try {
+            showLoading(true);
+            const response = await fetch('http://localhost:3000/electricities');
+            if (!response.ok) throw new Error('Failed to fetch electricities');
+            const electricities = await response.json();
+            const wattageSelect = document.querySelector("select[name='wattage']");
+            if (wattageSelect) {
+                wattageSelect.innerHTML = '<option value="0">ไม่เพิ่ม</option>';
+                electricities.forEach(e => {
+                    const opt = document.createElement("option");
+                    opt.value = e.electricity_quantity;
+                    opt.textContent = `${e.electricity_quantity} วัตต์ (+${e.electricity_price} บาท)`;
+                    wattageSelect.appendChild(opt);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading wattage options:', error);
+            showNotification('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดตัวเลือกกำลังวัตต์ได้');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function showBookingForm() {
+    if (selectedBooths.length === 0) {
+        showNotificationIcon('กรุณาเลือกบูธ', 'โปรดเลือกบูธอย่างน้อย 1 บูธ');
+        return;
+    }
+
+    try {
+        showLoading(true);
+        const configResponse = await fetch('http://localhost:3000/config');
+        if (!configResponse.ok) throw new Error('Failed to fetch config');
+        const config = await configResponse.json();
+        const boothMax = config.length > 0 ? config[0].booth_max : 2;
+
+        const bookingsResponse = await fetch('http://localhost:3000/bookings');
+        if (!bookingsResponse.ok) throw new Error('Failed to fetch bookings');
+        const bookings = await bookingsResponse.json();
+        const userBookings = bookings.filter(b => b.booking_status !== 'cancelled' && b.user_id === currentUser.user_id).length;
+
+        if (userBookings + selectedBooths.length > boothMax) {
+            showNotificationIcon('เกินจำนวน', `คุณจองบูธครบ ${boothMax} บูธแล้ว! สามารถจองได้อีก ${boothMax - userBookings} บูธ`);
+            return;
+        }
+
+        const instituteResponse = await fetch(`http://localhost:3000/institutes/${encodeURIComponent(currentUser.institute_name)}`);
+        if (!instituteResponse.ok) throw new Error('Failed to fetch institute');
+        const institute = await instituteResponse.json();
+        const typeResponse = await fetch(`http://localhost:3000/types/${institute.type_id}`);
+        if (!typeResponse.ok) throw new Error('Failed to fetch type');
+        const type = await typeResponse.json();
+
+        bookingTimeRange = {
+            start: new Date(type.type_start),
+            end: new Date(type.type_end)
+        };
+
+        // แสดง Modal แทนฟอร์มปกติ
+        document.getElementById("bookingFormModal").classList.remove("hidden");
+        document.getElementById("confirmBookingSection").classList.add("hidden");
+        document.getElementById("qrCodeSection").classList.add("hidden");
+        document.getElementById("boothNumbers").value = selectedBooths.join(", ");
+        document.getElementById("boothQuantity").value = selectedBooths.length;
+
+        const bookingDatetimeInput = document.getElementById("bookingDatetime");
+        bookingDatetimeInput.value = new Date().toISOString().slice(0, 16);
+        bookingDatetimeInput.min = type.type_start.slice(0, 16);
+        bookingDatetimeInput.max = type.type_end.slice(0, 16);
+
+        const timeRangeSpan = document.getElementById("bookingTimeRange");
+        timeRangeSpan.textContent = `จองได้ตั้งแต่ ${new Date(type.type_start).toLocaleString('th-TH')} ถึง ${new Date(type.type_end).toLocaleString('th-TH')}`;
+
+        document.getElementById("bookingStatus").value = "pending";
+        document.getElementById("createdAt").value = new Date().toISOString().slice(0, 16);
+        document.getElementById("staffCount").value = 2;
+
+        const nameplatesContainer = document.getElementById("boothNameplates");
+        nameplatesContainer.innerHTML = '<label class="block text-sm font-medium mb-2">ป้ายชื่อหน้าบูธ</label>';
+        selectedBooths.forEach(boothId => {
+            const div = document.createElement("div");
+            div.innerHTML = `
+                <label class="block text-sm">บูธ ${boothId}</label>
+                <input type="text" name="nameplate-${boothId}" class="w-full p-2 border rounded-md mb-2" value="บูธ${currentUser.institute_name}-${boothId}" required>
+            `;
+            nameplatesContainer.appendChild(div);
+        });
+
+        await calculatePrice();
+    } catch (error) {
+        console.error('Error showing booking form:', error);
+        showNotificationIcon('เกิดข้อผิดพลาด', 'ไม่สามารถแสดงฟอร์มจองได้');
+    } finally {
+        showLoading(false);
+    }
+}
+
+    async function calculatePrice() {
+        try {
+            showLoading(true);
+            const wattage = parseInt(document.querySelector("select[name='wattage']").value) || 0;
+            const bookingDate = new Date(document.getElementById("bookingDatetime").value).toISOString().split("T")[0];
+
+            const instituteResponse = await fetch(`http://localhost:3000/institutes/${encodeURIComponent(currentUser.institute_name)}`);
+            if (!instituteResponse.ok) throw new Error(`Failed to fetch institute: ${instituteResponse.status}`);
+            const institute = await instituteResponse.json();
+
+            const typeResponse = await fetch(`http://localhost:3000/types/${institute.type_id}`);
+            if (!typeResponse.ok) throw new Error(`Failed to fetch type: ${typeResponse.status}`);
+            const type = await typeResponse.json();
+
+            let basePrice = parseFloat(type.price) * selectedBooths.length;
+            if (isNaN(basePrice)) {
+                console.error('Base price is NaN', { typePrice: type.price, boothCount: selectedBooths.length });
+                throw new Error('Invalid base price');
+            }
+
+            const earlyBirdStart = '2025-05-01';
+            const earlyBirdEnd = '2025-05-10';
+            let earlyBirdDiscount = 0;
+            if (institute.type_id === 'T001' && bookingDate >= earlyBirdStart && bookingDate <= earlyBirdEnd) {
+                earlyBirdDiscount = basePrice * 0.2;
+                basePrice *= 0.8;
+                console.log('Applied early bird discount: 20%');
+            }
+
+            let wattageCost = 0;
+            if (wattage > 0) {
+                const electricityResponse = await fetch('http://localhost:3000/electricities');
+                if (!electricityResponse.ok) throw new Error('Failed to fetch electricities');
+                const electricities = await electricityResponse.json();
+                const wattageOption = electricities.find(e => e.electricity_quantity === wattage);
+                if (!wattageOption) {
+                    console.error('Invalid wattage quantity', { wattage });
+                    throw new Error('Invalid wattage quantity');
+                }
+                wattageCost = parseFloat(wattageOption.electricity_price) * selectedBooths.length;
+                if (isNaN(wattageCost)) {
+                    console.error('Wattage cost is NaN', { electricityPrice: wattageOption.electricity_price });
+                    throw new Error('Invalid wattage cost');
+                }
+            }
+
+            const totalPrice = basePrice + wattageCost;
+            if (isNaN(totalPrice)) {
+                console.error('Total price is NaN', { basePrice, wattageCost });
+                throw new Error('Invalid total price');
+            }
+
+            document.getElementById("totalPrice").value = `${totalPrice.toFixed(2)} บาท`;
+
+            window.currentBookingPrices = {
+                basePrice: basePrice.toFixed(2),
+                wattageCost: wattageCost.toFixed(2),
+                totalPrice: totalPrice.toFixed(2),
+                pricePerBooth: (basePrice / selectedBooths.length).toFixed(2),
+                wattageCostPerBooth: (wattageCost / selectedBooths.length).toFixed(2)
+            };
+            console.log('Price calculated:', window.currentBookingPrices);
+        } catch (error) {
+            console.error('Error calculating price:', error);
+            showNotification('เกิดข้อผิดพลาด', `ไม่สามารถคำนวณราคาได้: ${error.message}`);
+        } finally {
+            showLoading(false);
+        }
+    }
+
+   const bookingForm = document.getElementById("bookingForm");
+if (bookingForm) {
+    bookingForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        try {
+            showLoading(true);
+            const bookingDatetime = new Date(document.getElementById("bookingDatetime").value);
+            if (bookingDatetime < bookingTimeRange.start || bookingDatetime > bookingTimeRange.end) {
+                showNotification('วันที่ไม่ถูกต้อง', `กรุณาเลือกวันที่จองภายในช่วง ${new Date(bookingTimeRange.start).toLocaleString('th-TH')} ถึง ${new Date(bookingTimeRange.end).toLocaleString('th-TH')}`);
+                return;
+            }
+
+            if (!window.currentBookingPrices || isNaN(parseFloat(window.currentBookingPrices.totalPrice))) {
+                showNotification('เกิดข้อผิดพลาด', 'ข้อมูลราคาไม่ถูกต้อง กรุณาลองคำนวณราคาใหม่');
+                return;
+            }
+
+            const nameplates = {};
+            selectedBooths.forEach(boothId => {
+                const nameplateInput = document.querySelector(`input[name="nameplate-${boothId}"]`);
+                if (!nameplateInput) throw new Error(`Nameplate input for booth ${boothId} not found`);
+                nameplates[boothId] = nameplateInput.value;
+            });
+
+            bookingData = {
+                booth_ids: selectedBooths,
+                booth_quantity: selectedBooths.length,
+                booking_datetime: document.getElementById("bookingDatetime").value,
+                booth_nameplates: nameplates,
+                amount: parseFloat(window.currentBookingPrices.totalPrice),
+                base_price: parseFloat(window.currentBookingPrices.basePrice),
+                wattage_cost: parseFloat(window.currentBookingPrices.wattageCost),
+                price_per_booth: parseFloat(window.currentBookingPrices.pricePerBooth),
+                wattage_cost_per_booth: parseFloat(window.currentBookingPrices.wattageCostPerBooth),
+                booking_status: 'pending',
+                payment_status: 'pending',
+                created_at: document.getElementById("createdAt").value,
+                electricity_request: parseInt(document.getElementById("wattage").value) > 0,
+                electricity_quantity: parseInt(document.getElementById("wattage").value) > 0 ? parseInt(document.getElementById("wattage").value) : null,
+                staff_count: parseInt(document.getElementById("staffCount").value),
+                user_id: currentUser.user_id
+            };
+
+            // แสดง Confirm Booking Section
+            document.getElementById("bookingFormModal").classList.add("hidden");
+            document.getElementById("confirmBookingSection").classList.remove("hidden");
+
+            // อัปเดตข้อมูลใน Confirm Booking Section
+            document.getElementById("confirmBoothNumbers").textContent = bookingData.booth_ids.join(", ");
+            document.getElementById("confirmBoothQuantity").textContent = bookingData.booth_quantity;
+            document.getElementById("confirmBookingDatetime").textContent = new Date(bookingData.booking_datetime).toLocaleString('th-TH');
+            document.getElementById("confirmBasePrice").textContent = `${bookingData.base_price.toFixed(2)} บาท`;
+            document.getElementById("confirmWattageCost").textContent = `${bookingData.wattage_cost.toFixed(2)} บาท`;
+            document.getElementById("confirmTotalPrice").textContent = `${bookingData.amount.toFixed(2)} บาท`;
+            document.getElementById("confirmWattage").textContent = bookingData.electricity_quantity ? `${bookingData.electricity_quantity} วัตต์` : 'ไม่เพิ่ม';
+            document.getElementById("confirmStaffCount").textContent = bookingData.staff_count;
+
+            // อัปเดตป้ายชื่อ
+            const confirmNameplates = document.getElementById("confirmNameplates");
+            confirmNameplates.innerHTML = '<p class="font-medium">ป้ายชื่อ:</p>';
+            Object.entries(bookingData.booth_nameplates).forEach(([boothId, nameplate]) => {
+                const p = document.createElement("p");
+                p.textContent = `บูธ ${boothId}: ${nameplate}`;
+                confirmNameplates.appendChild(p);
+            });
+        } catch (error) {
+            console.error('Error preparing confirmation:', error);
+            showNotification('เกิดข้อผิดพลาด', `ไม่สามารถเตรียมการยืนยันได้: ${error.message}`);
+        } finally {
+            showLoading(false);
+        }
+    });
+}
+    async function updateMyBookings() {
+        try {
+            showLoading(true);
+            const response = await fetch('http://localhost:3000/bookings');
+            if (!response.ok) throw new Error('Failed to fetch bookings');
+            const bookings = await response.json();
+            const myBookingsTable = document.getElementById("myBookingsTable");
+            if (myBookingsTable) {
+                myBookingsTable.innerHTML = "";
+                const currentBookings = bookings.filter(b => 
+                    b.user_id === currentUser.user_id && 
+                    b.booking_status !== 'cancelled'
+                );
+
+                if (currentBookings.length === 0) {
+                    myBookingsTable.innerHTML = '<tr><td colspan="5" class="p-2 border text-center">ไม่มีการจองปัจจุบัน</td></tr>';
+                } else {
+                    currentBookings.forEach(booking => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+                            <td class="p-2 border">${booking.booth_id}</td>
+                            <td class="p-2 border">${booking.amount.toFixed(2)}</td>
+                            <td class="p-2 border">${booking.booking_status}</td>
+                            <td class="p-2 border">${booking.payment_status}</td>
+                            <td class="p-2 border">
+                                ${booking.booking_status === 'pending' ? `<button class="bg-red-500 text-white px-2 py-1 rounded-md cancel-booking" data-id="${booking.booking_id}">ยกเลิก</button>` : ''}
+                            </td>
+                        `;
+                        myBookingsTable.appendChild(row);
+                    });
+                }
+
+                document.querySelectorAll(".cancel-booking").forEach(button => {
+                    button.addEventListener("click", async () => {
+                        const bookingId = button.dataset.id;
+                        if (confirm("ยืนยันการยกเลิกการจอง?")) {
+                            try {
+                                showLoading(true);
+                                const bookingResponse = await fetch(`http://localhost:3000/bookings/${bookingId}`);
+                                if (!bookingResponse.ok) throw new Error('Failed to fetch booking');
+                                const booking = await bookingResponse.json();
+
+                                await fetch(`http://localhost:3000/bookings/${bookingId}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ ...booking, booking_status: 'cancelled', payment_status: 'cancelled' })
+                                });
+
+                                const boothResponse = await fetch(`http://localhost:3000/booths/${booking.booth_id}`);
+                                if (!boothResponse.ok) throw new Error(`Failed to fetch booth ${booking.booth_id}`);
+                                const booth = await boothResponse.json();
+                                await fetch(`http://localhost:3000/booths/${booking.booth_id}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ location: booth.location, status: 'available' })
+                                });
+
+                                if (bookingData && bookingData.booth_ids.includes(booking.booth_id)) {
+                                    localStorage.removeItem('bookingData');
+                                    bookingData = null;
+                                    const notificationIcon = document.getElementById("notificationIcon");
+                                    const notificationBadge = document.getElementById("notificationBadge");
+                                    if (notificationIcon) notificationIcon.classList.add("hidden");
+                                    if (notificationBadge) notificationBadge.classList.add("hidden");
+                                }
+
+                                await updateMyBookings();
+                                await initializeBoothMap();
+                                showNotification('สำเร็จ', 'ยกเลิกการจองเรียบร้อย!');
+                            } catch (error) {
+                                console.error('Error cancelling booking:', error);
+                                showNotification('เกิดข้อผิดพลาด', 'ไม่สามารถยกเลิกการจองได้');
+                            } finally {
+                                showLoading(false);
+                            }
+                        }
+                    });
+                });
+            }
+        } catch (error) {
+            console.error('Error loading my bookings:', error);
+            showNotification('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดการจองของฉันได้');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    async function updateBookingHistory() {
+        try {
+            showLoading(true);
+            const response = await fetch('http://localhost:3000/bookings');
+            if (!response.ok) throw new Error('Failed to fetch bookings');
+            const bookings = await response.json();
+            const historyTable = document.getElementById("myBookingsTable");
+            if (!historyTable) {
+                console.error('Element #myBookingsTable not found');
+                throw new Error('Booking history table not found');
+            }
+            historyTable.innerHTML = "";
+            const userBookings = bookings.filter(b => b.user_id === currentUser.user_id);
+
+            if (userBookings.length === 0) {
+                historyTable.innerHTML = '<tr><td colspan="5" class="p-2 border text-center">ไม่มีประวัติการจอง</td></tr>';
+            } else {
+                userBookings.forEach(booking => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td class="p-2 border">${booking.booth_id}</td>
+                        <td class="p-2 border">${booking.amount.toFixed(2)}</td>
+                        <td class="p-2 border">${booking.booking_status}</td>
+                        <td class="p-2 border">${booking.payment_status}</td>
+                        <td class="p-2 border">
+                            ${booking.booking_status === 'pending' ? `<button class="bg-red-500 text-white px-2 py-1 rounded-md cancel-booking" data-id="${booking.booking_id}">ยกเลิก</button>` : ''}
+                        </td>
+                    `;
+                    historyTable.appendChild(row);
+                });
+            }
+
+            document.querySelectorAll(".cancel-booking").forEach(button => {
+                button.addEventListener("click", async () => {
+                    const bookingId = button.dataset.id;
+                    if (confirm("ยืนยันการยกเลิกการจอง?")) {
+                        try {
+                            showLoading(true);
+                            const bookingResponse = await fetch(`http://localhost:3000/bookings/${bookingId}`);
+                            if (!bookingResponse.ok) {
+                                const errorData = await bookingResponse.json();
+                                throw new Error(errorData.error || 'Failed to fetch booking');
+                            }
+                            const booking = await bookingResponse.json();
+
+                            await fetch(`http://localhost:3000/bookings/${bookingId}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ ...booking, booking_status: 'cancelled', payment_status: 'cancelled' })
+                            });
+
+                            const boothResponse = await fetch(`http://localhost:3000/booths/${booking.booth_id}`);
+                            if (!boothResponse.ok) throw new Error(`Failed to fetch booth ${booking.booth_id}`);
+                            const booth = await boothResponse.json();
+                            await fetch(`http://localhost:3000/booths/${booking.booth_id}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ location: booth.location, status: 'available' })
+                            });
+
+                            if (bookingData && bookingData.booth_ids.includes(booking.booth_id)) {
+                                localStorage.removeItem('bookingData');
+                                bookingData = null;
+                                const notificationIcon = document.getElementById("notificationIcon");
+                                const notificationBadge = document.getElementById("notificationBadge");
+                                if (notificationIcon) notificationIcon.classList.add("hidden");
+                                if (notificationBadge) notificationBadge.classList.add("hidden");
+                            }
+
+                            await updateBookingHistory();
+                            await initializeBoothMap();
+                            showNotificationIcon('สำเร็จ', 'ยกเลิกการจองเรียบร้อย!');
+                        } catch (error) {
+                            console.error('Error cancelling booking:', error);
+                            showNotification('เกิดข้อผิดพลาด', 'ไม่สามารถยกเลิกการจองได้');
+                        } finally {
+                            showLoading(false);
+                        }
+                    }
+                });
+            });
+        } catch (error) {
+            console.error('Error loading booking history:', error);
+            showNotification('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดประวัติการจองได้');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // Admin Functions
+    async function initializeAdmin() {
+        await Promise.all([loadBoothTable(), loadBookingTable()]);
+    }
+
+    async function loadBoothTable() {
+        try {
+            const response = await fetch('http://localhost:3000/booths');
+            if (!response.ok) throw new Error('Failed to fetch booths');
+            const booths = await response.json();
+            console.log('Loaded booths:', booths);
+            const boothTable = document.getElementById("boothTable");
+            if (boothTable) {
+                boothTable.innerHTML = "";
+                booths.forEach(booth => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td class="p-2 border">${booth.booth_id}</td>
+                        <td class="p-2 border">${booth.location}</td>
+                        <td class="p-2 border">${booth.status === 'available' ? 'ว่าง' : 'จองแล้ว'}</td>
+                
+                    `;
+                    boothTable.appendChild(row);
+                });
+
+                document.querySelectorAll(".edit-booth").forEach(button => {
+                    button.addEventListener("click", async () => {
+                        const boothId = button.dataset.id;
+                        editingBoothId = boothId;
+                        const response = await fetch(`http://localhost:3000/booths/${boothId}`);
+                        if (!response.ok) throw new Error(`Failed to fetch booth ${boothId}`);
+                        const booth = await response.json();
+                        document.getElementById("editBoothId").value = booth.booth_id;
+                        document.getElementById("editBoothLocation").value = booth.location;
+                        document.getElementById("editBoothStatus").value = booth.status;
+                        document.getElementById("editBoothModal").classList.remove("hidden");
+                        initializeEditBoothMap(booth);
+                    });
+                });
+
+                document.querySelectorAll(".delete-booth").forEach(button => {
+                    button.addEventListener("click", async () => {
+                        const boothId = button.dataset.id;
+                        if (confirm(`ยืนยันการลบบูธ ${boothId}?`)) {
+                            try {
+                                showLoading(true);
+                                const boothResponse = await fetch(`http://localhost:3000/booths/${boothId}`);
+                                if (!boothResponse.ok) throw new Error('Failed to fetch booth');
+                                const booth = await boothResponse.json();
+                                if (booth.status === 'booked') {
+                                    throw new Error(`ไม่สามารถลบบูธ ${boothId} ได้ เนื่องจากถูกจองอยู่`);
+                                }
+
+                                const response = await fetch(`http://localhost:3000/booths/${boothId}`, {
+                                    method: 'DELETE',
+                                    headers: { 'Content-Type': 'application/json' }
+                                });
+                                if (!response.ok) {
+                                    const errorData = await response.json();
+                                    throw new Error(errorData.error || 'Failed to delete booth');
+                                }
+                                await loadBoothTable();
+                                showNotification('สำเร็จ', 'ลบบูธสำเร็จ');
+                            } catch (error) {
+                                console.error('Error deleting booth:', error);
+                                showNotification('เกิดข้อผิดพลาด', `ไม่สามารถลบบูธได้: ${error.message}`);
+                            } finally {
+                                showLoading(false);
+                            }
+                        }
+                    });
+                });
+            }
+        } catch (error) {
+            console.error('Error loading booth table:', error);
+            showNotification('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลบูธได้');
+        }
+    }
+
+    async function initializeEditBoothMap(currentBooth) {
+        try {
+            const response = await fetch('http://localhost:3000/booths');
+            if (!response.ok) throw new Error('Failed to fetch booths');
+            const booths = await response.json();
+            const boothMap = document.getElementById("editBoothMap");
+            if (boothMap) {
+                boothMap.innerHTML = "";
+                let selectedLocation = currentBooth.location;
+
+                for (let row = 1; row <= 10; row++) {
+                    const rowLabel = document.createElement("div");
+                    rowLabel.className = "col-span-10 text-center font-bold";
+                    rowLabel.textContent = `แถว ${row}`;
+                    boothMap.appendChild(rowLabel);
+                    const boothsInRow = booths.filter(b => b.location.startsWith(`Row ${row}`));
+                    boothsInRow.forEach(booth => {
+                        const boothDiv = document.createElement("div");
+                        boothDiv.className = `p-2 rounded text-sm text-center ${booth.status === 'available' ? 'bg-green-200' : 'bg-red-200'} ${booth.booth_id === currentBooth.booth_id ? 'border-2 border-blue-500' : ''} cursor-pointer`;
+                        boothDiv.innerHTML = `
+                            <p>${booth.booth_id}</p>
+                            <p>${booth.status === 'available' ? 'ว่าง' : 'จองแล้ว'}</p>
+                        `;
+                        boothDiv.addEventListener("click", () => {
+                            selectedLocation = booth.location;
+                            document.getElementById("editBoothLocation").value = selectedLocation;
+                            document.querySelectorAll("#editBoothMap .border-blue-500").forEach(div => {
+                                div.classList.remove("border-2", "border-blue-500");
+                            });
+                            boothDiv.classList.add("border-2", "border-blue-500");
+                        });
+                        boothMap.appendChild(boothDiv);
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error loading edit booth map:', error);
+            showNotification('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดแผนผังบูธได้');
+        }
+    }
+
+    const editBoothForm = document.getElementById("editBoothForm");
+    if (editBoothForm) {
+        editBoothForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            try {
+                showLoading(true);
+                let location = document.getElementById("editBoothLocation").value;
+                location = location.replace(/,\s*/g, ' ');
+                const status = document.getElementById("editBoothStatus").value;
+
+                console.log('Updating booth:', { booth_id: editingBoothId, location, status });
+
+                const response = await fetch(`http://localhost:3000/booths/${editingBoothId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ location, status })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to update booth');
+                }
+
+                document.getElementById("editBoothModal").classList.add("hidden");
+                await loadBoothTable();
+                showNotification('สำเร็จ', 'อัปเดตข้อมูลบูธเรียบร้อย');
+            } catch (error) {
+                console.error('Error updating booth:', error);
+                showNotification('เกิดข้อผิดพลาด', `ไม่สามารถอัปเดตข้อมูลบูธได้: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        });
+    }
+
+    async function loadBookingTable() {
+        try {
+            const response = await fetch('http://localhost:3000/bookings');
+            if (!response.ok) throw new Error('Failed to fetch bookings');
+            const bookings = await response.json();
+            const bookingTable = document.getElementById("bookingTable");
+            if (bookingTable) {
+                bookingTable.innerHTML = "";
+                bookings.forEach(booking => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td class="p-2 border">${booking.booking_id}</td>
+                        <td class="p-2 border">${booking.booth_id}</td>
+                        <td class="p-2 border">${booking.booth_quantity}</td>
+                        <td class="p-2 border">${new Date(booking.booking_datetime).toLocaleString('th-TH')}</td>
+                        <td class="p-2 border">${booking.booth_nameplate}</td>
+                        <td class="p-2 border">${booking.booking_status}</td>
+                        <td class="p-2 border">
+                            ${booking.booking_status === 'pending' ? `
+                                <button class="bg-green-500 text-white px-2 py-1 rounded-md confirm-booking" data-id="${booking.booking_id}">ยืนยัน</button>
+                                <button class="bg-red-500 text-white px-2 py-1 rounded-md reject-booking" data-id="${booking.booking_id}">ปฏิเสธ</button>
+                            ` : ''}
+                        </td>
+                    `;
+                    bookingTable.appendChild(row);
+                });
+
+                document.querySelectorAll(".confirm-booking").forEach(button => {
+                    button.addEventListener("click", async () => {
+                        const bookingId = button.dataset.id;
+                        if (confirm("ยืนยันการจองนี้?")) {
+                            try {
+                                showLoading(true);
+                                const bookingResponse = await fetch(`http://localhost:3000/bookings/${bookingId}`);
+                                if (!bookingResponse.ok) throw new Error('Failed to fetch booking');
+                                const booking = await bookingResponse.json();
+                                await fetch(`http://localhost:3000/bookings/${bookingId}`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ ...booking, booking_status: 'confirmed' })
+                                });
+                                await loadBookingTable();
+                                showNotification('สำเร็จ', 'ยืนยันการจองเรียบร้อย!');
+                            } catch (error) {
+                                console.error('Error confirming booking:', error);
+                                showNotification('เกิดข้อผิดพลาด', 'ไม่สามารถยืนยันการจองได้');
+                            } finally {
+                                showLoading(false);
+                            }
+                        }
+                    });
+                });
+
+                document.querySelectorAll(".reject-booking").forEach(button => {
+                    button.addEventListener("click", async () => {
+                        const bookingId = button.dataset.id;
+                        if (!bookingId) {
+                            console.error('No bookingId found in button dataset');
+                            showNotification('เกิดข้อผิดพลาด', 'ไม่พบ ID การจอง');
+                            return;
+                        }
+
+                        if (confirm("ยกเลิกการจองนี้?")) {
+                            try {
+                                showLoading(true);
+                                const rejectResponse = await fetch(`http://localhost:3000/bookings/${bookingId}/reject`, {
+                                    method: 'PUT',
+                                    headers: { 'Content-Type': 'application/json' }
+                                });
+                                if (!rejectResponse.ok) {
+                                    const errorText = await rejectResponse.text();
+                                    const errorMatch = errorText.match(/<pre>(.*?)<\/pre>/);
+                                    const errorMessage = errorMatch ? errorMatch[1].replace(/<br>/g, ' ') : errorText;
+                                    throw new Error(`Failed to cancel booking: ${rejectResponse.status} ${errorMessage}`);
+                                }
+
+                                await loadBookingTable();
+                                showNotification('สำเร็จ', 'ยกเลิกการจองเรียบร้อย!');
+                            } catch (error) {
+                                console.error('Error cancelling booking:', error.message, error.stack);
+                                showNotification('เกิดข้อผิดพลาด', `ไม่สามารถยกเลิกการจองได้: ${error.message}`);
+                            } finally {
+                                showLoading(false);
+                            }
+                        }
+                    });
+                });
+            }
+        } catch (error) {
+            console.error('Error loading booking table:', error);
+            showNotification('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลการจองได้');
+        }
+    }
+
+    // Config Form
+    async function showConfigForm() {
+    try {
+        const [typesResponse, electricityResponse, configResponse] = await Promise.all([
+            fetch('http://localhost:3000/types'),
+            fetch('http://localhost:3000/electricities'),
+            fetch('http://localhost:3000/config')
+        ]);
+        if (!typesResponse.ok || !electricityResponse.ok || !configResponse.ok) throw new Error('Failed to fetch config data');
+        const types = await typesResponse.json();
+        const electricities = await electricityResponse.json();
+        const config = await configResponse.json();
+
+        const typeMap = {
+            'T001': { start: 'network_university_start', end: 'network_university_end', fee: 'network_university_fee' },
+            'T002': { start: 'psu_faculty_start', end: 'psu_faculty_end', fee: 'psu_faculty_fee' },
+            'T003': { start: 'general_institute_start', end: 'general_institute_end', fee: 'general_institute_fee' }
+        };
+
+        types.forEach(type => {
+            const fields = typeMap[type.type_id];
+            document.querySelector(`input[name="${fields.start}"]`).value = type.type_start.slice(0, 16);
+            document.querySelector(`input[name="${fields.end}"]`).value = type.type_end.slice(0, 16);
+            document.querySelector(`input[name="${fields.fee}"]`).value = parseFloat(type.price) || 0;
+        });
+
+        document.querySelector('input[name="booth_max"]').value = config.length > 0 ? config[0].booth_max : 2;
+
+        const wattageContainer = document.getElementById("wattageContainer");
+        if (wattageContainer) {
+            wattageContainer.innerHTML = "";
+            // แสดงข้อมูลที่มีอยู่ในตาราง electricities
+            electricities.forEach((e, index) => {
+                const div = document.createElement("div");
+                div.className = "flex space-x-4 items-center mb-4";
+                div.innerHTML = `
+                    <input type="number" name="wattage_quantity_${index}" value="${e.electricity_quantity}" placeholder="กำลังวัตต์" class="w-1/2 p-2 border rounded-md" required>
+                    <input type="number" name="wattage_price_${index}" value="${e.electricity_price}" placeholder="ราคา (บาท)" class="w-1/2 p-2 border rounded-md" required>
+                    <button type="button" class="bg-red-500 text-white px-2 py-1 rounded-md remove-wattage">-</button>
+                `;
+                wattageContainer.appendChild(div);
+
+                // เพิ่มการทำงานของปุ่มลบ
+                div.querySelector(".remove-wattage").addEventListener("click", () => {
+                    div.remove();
+                });
+            });
+        }
+    } catch (error) {
+        console.error('Error loading config form:', error);
+        showNotification('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดฟอร์มตั้งค่าได้');
+    }
+}
+
+    function addWattageField(quantity = '', price = '') {
+    const wattageContainer = document.getElementById("wattageContainer");
+    if (wattageContainer) {
+        const index = wattageContainer.children.length; // นับจำนวนช่องที่มีอยู่เพื่อตั้งชื่อไม่ให้ซ้ำ
+        const div = document.createElement("div");
+        div.className = "flex space-x-4 items-center mb-4";
+        div.innerHTML = `
+            <input type="number" name="wattage_quantity_${index}" value="${quantity}" placeholder="กำลังวัตต์" class="w-1/2 p-2 border rounded-md" required>
+            <input type="number" name="wattage_price_${index}" value="${price}" placeholder="ราคา (บาท)" class="w-1/2 p-2 border rounded-md" required>
+            <button type="button" class="bg-red-500 text-white px-2 py-1 rounded-md remove-wattage">-</button>
+        `;
+        wattageContainer.appendChild(div);
+
+        div.querySelector(".remove-wattage").addEventListener("click", () => {
+            div.remove();
+        });
+    }
+}
+
+const addWattageButton = document.getElementById("addWattageButton");
+if (addWattageButton) {
+    addWattageButton.addEventListener("click", () => {
+        addWattageField(); // เพิ่มช่องใหม่โดยไม่มีค่าเริ่มต้น
+    });
+}
+    const addBoothForm = document.getElementById("addBoothForm");
+    if (addBoothForm) {
+        addBoothForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const boothId = document.getElementById("newBoothId").value;
+            const row = document.getElementById("newBoothRow").value;
+            const column = document.getElementById("newBoothColumn").value;
+            const location = `Row ${row}, Column ${column}`;
+            const status = document.getElementById("newBoothStatus").value;
+            try {
+                showLoading(true);
+                const checkResponse = await fetch('http://localhost:3000/booths');
+                if (!checkResponse.ok) throw new Error('Failed to fetch booths');
+                const booths = await checkResponse.json();
+                if (booths.some(booth => booth.booth_id === boothId)) {
+                    throw new Error(`บูธ ${boothId} มีอยู่ในระบบแล้ว`);
+                }
+                if (booths.some(booth => booth.location === location)) {
+                    throw new Error(`ตำแหน่ง ${location} มีบูธอยู่แล้ว`);
+                }
+
+                const response = await fetch('http://localhost:3000/booths', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ booth_id: boothId, location, status })
+                });
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to add booth');
+                }
+                document.getElementById("addBoothModal").classList.add("hidden");
+                document.getElementById("addBoothForm").reset();
+                await loadBoothTable();
+                showNotificationIcon('สำเร็จ', 'เพิ่มบูธเรียบร้อย');
+            } catch (error) {
+                console.error('Error adding booth:', error);
+                showNotificationIcon('เกิดข้อผิดพลาด', `ไม่สามารถเพิ่มบูธได้: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        });
+    }
+
+    const configForm = document.getElementById("configForm");
+if (configForm) {
+    configForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        try {
+            showLoading(true);
+            const formData = new FormData(event.target);
+            const configData = {
+                types: [
+                    {
+                        type_id: 'T001',
+                        type_name: 'มหาวิทยาลัยในเครือข่าย',
+                        price: parseFloat(formData.get('network_university_fee')),
+                        type_start: formData.get('network_university_start'),
+                        type_end: formData.get('network_university_end')
+                    },
+                    {
+                        type_id: 'T002',
+                        type_name: 'คณะ/ส่วนงานภายใน ม.อ.',
+                        price: parseFloat(formData.get('psu_faculty_fee')),
+                        type_start: formData.get('psu_faculty_start'),
+                        type_end: formData.get('psu_faculty_end')
+                    },
+                    {
+                        type_id: 'T003',
+                        type_name: 'สถาบันการศึกษาทั่วไป',
+                        price: parseFloat(formData.get('general_institute_fee')),
+                        type_start: formData.get('general_institute_start'),
+                        type_end: formData.get('general_institute_end')
+                    }
+                ],
+                booth_max: parseInt(formData.get('booth_max')),
+                electricities: []
+            };
+
+            // รวบรวมข้อมูลกำลังวัตต์และราคาจาก wattageContainer
+            const wattageContainer = document.getElementById("wattageContainer");
+            Array.from(wattageContainer.children).forEach((div, index) => {
+                const quantity = parseInt(div.querySelector(`input[name="wattage_quantity_${index}"]`).value);
+                const price = parseFloat(div.querySelector(`input[name="wattage_price_${index}"]`).value);
+                if (quantity > 0 && price >= 0) {
+                    configData.electricities.push({
+                        electricity_quantity: quantity,
+                        electricity_price: price
+                    });
+                }
+            });
+
+            // อัปเดตข้อมูลในตาราง types
+            await Promise.all(configData.types.map(type =>
+                fetch(`http://localhost:3000/types/${type.type_id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(type)
+                })
+            ));
+
+            // อัปเดตจำนวนบูธสูงสุด
+            await fetch('http://localhost:3000/config', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ booth_max: configData.booth_max })
+            });
+
+            // อัปเดตข้อมูลในตาราง electricities (ลบข้อมูลเก่าก่อนแล้วเพิ่มใหม่)
+            await fetch('http://localhost:3000/electricities', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(configData.electricities)
+            });
+
+            showNotification('สำเร็จ', 'บันทึกการตั้งค่าเรียบร้อย!');
+        } catch (error) {
+            console.error('Error saving config:', error);
+            showNotification('เกิดข้อผิดพลาด', `ไม่สามารถบันทึกการตั้งค่าได้: ${error.message}`);
+        } finally {
+            showLoading(false);
+        }
+    });
+}
+
+    // Initialization
+    try {
+        currentUser = JSON.parse(localStorage.getItem('user')) || null;
+        bookingData = JSON.parse(localStorage.getItem('bookingData')) || null;
+
+        updateNavbar();
+
+        if (currentUser) {
+            const userAvatar = document.getElementById("userAvatar");
+            const userName = document.getElementById("userName");
+            if (userAvatar && userName) {
+                userAvatar.src = currentUser.profile_image ? `${BASE_URL}${currentUser.profile_image}` : '/public/images/default-profile.png';
+                userName.textContent = currentUser.username || 'ผู้ใช้';
+            }
+            document.getElementById("navUserSection").classList.remove("hidden");
+            document.getElementById("loginSection").classList.add("hidden");
+            if (currentUser.role === 'admin') {
+                document.getElementById("dashboardSection").classList.remove("hidden");
+                initializeAdmin();
+            } else {
+                document.getElementById("customerSection").classList.remove("hidden");
+                document.getElementById("myBookingsSection").classList.remove("hidden");
+                initializeBoothMap();
+                populateWattageOptions();
+                updateMyBookings();
+            }
+        }
+
+        if (currentUser && bookingData) {
+            checkPendingBookings();
+        }
+    } catch (error) {
+        console.error('Error initializing page:', error);
+        showNotification('เกิดข้อผิดพลาด', `ไม่สามารถโหลดหน้าได้: ${error.message}`);
+    }
+});
+</script>
+</body>
+</html>

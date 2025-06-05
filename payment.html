@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ชำระเงิน - ระบบจองบูธ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
+    <!-- เพิ่ม Font Awesome เพื่อใช้ไอคอน -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 font-sans">
+    <!-- Navbar -->
+    <nav class="bg-white shadow-md p-4">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-2xl font-bold">ระบบจองบูธ</h1>
+            <div id="navUserSection" class="space-x-4">
+                <a href="/profile.html" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600">โปรไฟล์</a>
+                <button id="logoutButton" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600">ออกจากระบบ</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6">
+        <!-- Payment Section -->
+        <div class="bg-white p-6 rounded-lg shadow-md mb-8">
+            <h2 class="text-2xl font-semibold mb-4">ชำระเงิน</h2>
+            <div class="space-y-4">
+                <!-- Booking Details -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-base sm:text-sm">
+                    <p><strong>หมายเลขบูธ:</strong> <span id="paymentBoothNumbers"></span></p>
+                    <p><strong>จำนวนบูธ:</strong> <span id="paymentBoothQuantity"></span></p>
+                    <p><strong>วันที่/เวลา:</strong> <span id="paymentBookingDatetime"></span></p>
+                    <p><strong>การใช้ไฟ:</strong> <span id="paymentWattage"></span></p>
+                    <p><strong>จำนวนผู้เข้าร่วม:</strong> <span id="paymentStaffCount"></span></p>
+                    <p><strong>ราคาบูธ:</strong> <span id="paymentBasePrice"></span></p>
+                    <p><strong>ราคาวัตต์เพิ่มเติม:</strong> <span id="paymentWattageCost"></span></p>
+                </div>
+                <div id="paymentNameplates" class="border-t pt-4"></div>
+                <p class="text-lg flex items-center">
+                    <strong>จำนวนเงินรวม:</strong>
+                    <span class="ml-2 text-green-600 font-bold">💰 <span id="totalPaymentAmount"></span></span>
+                </p>
+                <!-- Payment Method Selection -->
+                <div class="mt-4">
+                    <h3 class="text-xl font-medium mb-4">เลือกวิธีการชำระเงิน</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- QR Code Option -->
+                        <label class="relative block">
+                            <input type="radio" name="paymentMethod" value="qr" checked class="peer hidden" onchange="togglePaymentForm()">
+                            <div class="flex items-center p-4 bg-gray-50 border-2 border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50">
+                                <i class="fas fa-qrcode text-3xl text-blue-500 mr-3"></i>
+                                <div>
+                                    <p class="text-lg font-medium text-gray-700">ชำระผ่าน QR Code</p>
+                                    <p class="text-sm text-gray-500">สแกน QR เพื่อชำระเงิน</p>
+                                </div>
+                            </div>
+                        </label>
+                        <!-- Credit Card Option -->
+                        <label class="relative block">
+                            <input type="radio" name="paymentMethod" value="card" class="peer hidden" onchange="togglePaymentForm()">
+                            <div class="flex items-center p-4 bg-gray-50 border-2 border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50">
+                                <i class="fas fa-credit-card text-3xl text-blue-500 mr-3"></i>
+                                <div>
+                                    <p class="text-lg font-medium text-gray-700">ชำระด้วยบัตรเครดิต</p>
+                                    <p class="text-sm text-gray-500">กรอกข้อมูลบัตรเพื่อชำระ</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <!-- QR Code Section -->
+                <div id="qrPaymentSection" class="mt-6">
+                    <h3 class="text-xl font-medium mb-2">สแกน QR Code เพื่อชำระเงิน</h3>
+                    <figure class="flex flex-col items-center">
+                        <canvas id="qrCode" class="border border-gray-300"></canvas>
+                        <figcaption class="text-sm text-gray-500 mt-2">
+                            สแกนเพื่อชำระภายใน <span id="paymentDeadline"></span>
+                        </figcaption>
+                    </figure>
+                </div>
+                <!-- Credit Card Form -->
+                <div id="cardPaymentSection" class="mt-6 hidden">
+                    <h3 class="text-xl font-medium mb-2">กรอกข้อมูลบัตรเครดิต</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">หมายเลขบัตร</label>
+                            <input type="text" id="cardNumber" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="1234 5678 9012 3456" maxlength="19">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">วันหมดอายุ (MM/YY)</label>
+                                <input type="text" id="cardExpiry" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="MM/YY" maxlength="5">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">CVV</label>
+                                <input type="text" id="cardCVV" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="123" maxlength="4">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Countdown Timer -->
+                <div class="mt-4 text-center">
+                    <p class="text-sm font-medium">เวลาที่เหลือสำหรับการชำระเงิน:</p>
+                    <p id="countdownTimer" class="text-lg font-bold text-red-500"></p>
+                </div>
+                <!-- Buttons -->
+                <div class="flex space-x-4 mt-6 justify-end">
+                    <button id="cancelBookingButton" class="bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 focus:ring-2 focus:ring-red-500">ยกเลิกการจอง</button>
+                    <button id="backToBookingButton" class="bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 focus:ring-2 focus:ring-gray-500">ย้อนกลับ</button>
+                    <button id="confirmPaymentButton" class="bg-green-500 text-white px-4 py-2 rounded-md hover:bg-green-600 focus:ring-2 focus:ring-green-500">ยืนยันการชำระ</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notification Modal -->
+        <div id="notificationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-sm">
+                <h3 class="text-xl font-semibold mb-4" id="notificationTitle"></h3>
+                <p id="notificationMessage"></p>
+                <button id="closeNotification" class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 mt-4">ตกลง</button>
+            </div>
+        </div>
+
+        <!-- Loading Modal -->
+        <div id="loadingModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden">
+            <div class="bg-white p-6 rounded-lg shadow-md flex items-center">
+                <svg class="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>กำลังโหลด...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = JSON.parse(localStorage.getItem('user')) || null;
+        let bookingData = JSON.parse(localStorage.getItem('bookingData')) || null;
+
+        // Notification and Loading Functions
+        function showNotification(title, message) {
+            document.getElementById("notificationTitle").textContent = title;
+            document.getElementById("notificationMessage").textContent = message;
+            document.getElementById("notificationModal").classList.remove("hidden");
+            document.getElementById("closeNotification").addEventListener("click", () => {
+                document.getElementById("notificationModal").classList.add("hidden");
+            }, { once: true });
+        }
+
+        function showLoading(show) {
+            document.getElementById("loadingModal").classList.toggle("hidden", !show);
+        }
+
+        // Toggle Payment Form
+        function togglePaymentForm() {
+            const method = document.querySelector('input[name="paymentMethod"]:checked').value;
+            document.getElementById("qrPaymentSection").classList.toggle("hidden", method !== "qr");
+            document.getElementById("cardPaymentSection").classList.toggle("hidden", method !== "card");
+            document.getElementById("confirmPaymentButton").disabled = method === "card" && !validateCardForm();
+        }
+
+        // Validate Credit Card Form
+        function validateCardForm() {
+            const cardNumber = document.getElementById("cardNumber").value.replace(/\s/g, '');
+            const cardExpiry = document.getElementById("cardExpiry").value;
+            const cardCVV = document.getElementById("cardCVV").value;
+            return cardNumber.length === 16 && /^\d{2}\/\d{2}$/.test(cardExpiry) && /^\d{3,4}$/.test(cardCVV);
+        }
+
+        // Initialize Payment Page
+        async function initializePaymentPage() {
+            try {
+                showLoading(true);
+
+                if (!currentUser || !bookingData) {
+                    showNotification('เกิดข้อผิดพลาด', 'ไม่มีข้อมูลการจองหรือผู้ใช้ กรุณาจองใหม่');
+                    setTimeout(() => window.location.href = 'index.html', 2000);
+                    return;
+                }
+
+                const requiredElements = {
+                    paymentBoothNumbers: document.getElementById("paymentBoothNumbers"),
+                    paymentBoothQuantity: document.getElementById("paymentBoothQuantity"),
+                    paymentBookingDatetime: document.getElementById("paymentBookingDatetime"),
+                    paymentBasePrice: document.getElementById("paymentBasePrice"),
+                    paymentWattageCost: document.getElementById("paymentWattageCost"),
+                    totalPaymentAmount: document.getElementById("totalPaymentAmount"),
+                    paymentWattage: document.getElementById("paymentWattage"),
+                    paymentStaffCount: document.getElementById("paymentStaffCount"),
+                    paymentNameplates: document.getElementById("paymentNameplates")
+                };
+
+                const missingElements = Object.entries(requiredElements)
+                    .filter(([key, element]) => !element)
+                    .map(([key]) => key);
+                if (missingElements.length > 0) {
+                    console.error('Missing DOM elements:', missingElements);
+                    throw new Error(`Missing elements: ${missingElements.join(', ')}`);
+                }
+
+                requiredElements.paymentBoothNumbers.textContent = bookingData.booth_ids.join(', ');
+                requiredElements.paymentBoothQuantity.textContent = bookingData.booth_quantity;
+                requiredElements.paymentBookingDatetime.textContent = new Date(bookingData.booking_datetime).toLocaleString('th-TH');
+                requiredElements.paymentBasePrice.textContent = `${bookingData.base_price.toFixed(2)} บาท`;
+                requiredElements.paymentWattageCost.textContent = `${bookingData.wattage_cost.toFixed(2)} บาท`;
+                requiredElements.totalPaymentAmount.textContent = `${bookingData.amount.toFixed(2)} บาท`;
+                requiredElements.paymentWattage.textContent = bookingData.electricity_quantity ? `${bookingData.electricity_quantity} วัตต์` : 'ไม่เพิ่ม';
+                requiredElements.paymentStaffCount.textContent = bookingData.staff_count;
+
+                requiredElements.paymentNameplates.innerHTML = '<p class="font-medium">ป้ายชื่อ:</p>';
+                Object.entries(bookingData.booth_nameplates).forEach(([boothId, nameplate]) => {
+                    const p = document.createElement('p');
+                    p.textContent = `บูธ ${boothId}: ${nameplate}`;
+                    requiredElements.paymentNameplates.appendChild(p);
+                });
+
+                // สร้าง QR Code
+                const qrCodeCanvas = document.getElementById("qrCode");
+                if (!qrCodeCanvas || !(qrCodeCanvas instanceof HTMLCanvasElement)) {
+                    throw new Error('QR Code element is not a canvas');
+                }
+                const paymentUrl = `https://example.com/pay?amount=${bookingData.amount}&user_id=${currentUser.user_id}`;
+                await QRCode.toCanvas(qrCodeCanvas, paymentUrl, { width: 200, margin: 2 }, (error) => {
+                    if (error) {
+                        console.error('Error generating QR Code:', error);
+                        throw new Error(`Failed to generate QR Code: ${error.message}`);
+                    }
+                });
+
+                // ตั้งค่า countdown timer (72 ชั่วโมงนับจาก created_at)
+                const createdAt = new Date(bookingData.created_at);
+                const deadline = new Date(createdAt.getTime() + 72 * 60 * 60 * 1000); // 3 วัน
+                document.getElementById("paymentDeadline").textContent = deadline.toLocaleString('th-TH');
+
+                function updateCountdown() {
+                    const now = new Date();
+                    const timeLeft = deadline - now;
+                    if (timeLeft <= 0) {
+                        document.getElementById("countdownTimer").textContent = "หมดเวลา";
+                        showNotification('หมดเวลา', 'ระยะเวลาการชำระเงินหมดอายุ กรุณาจองใหม่');
+                        setTimeout(() => window.location.href = 'index.html', 2000);
+                        return;
+                    }
+                    const days = Math.floor(timeLeft / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((timeLeft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+                    document.getElementById("countdownTimer").textContent = `${days} วัน ${hours} ชม. ${minutes} นาที ${seconds} วินาที`;
+                }
+                updateCountdown();
+                setInterval(updateCountdown, 1000);
+
+                // เพิ่มการตรวจสอบฟอร์มบัตร
+                document.getElementById("cardNumber").addEventListener("input", () => {
+                    let value = document.getElementById("cardNumber").value.replace(/\D/g, '');
+                    value = value.replace(/(\d{4})/g, '$1 ').trim();
+                    document.getElementById("cardNumber").value = value;
+                    document.getElementById("confirmPaymentButton").disabled = !validateCardForm();
+                });
+                document.getElementById("cardExpiry").addEventListener("input", () => {
+                    let value = document.getElementById("cardExpiry").value.replace(/\D/g, '');
+                    if (value.length >= 2) value = value.slice(0, 2) + '/' + value.slice(2, 4);
+                    document.getElementById("cardExpiry").value = value.slice(0, 5);
+                    document.getElementById("confirmPaymentButton").disabled = !validateCardForm();
+                });
+                document.getElementById("cardCVV").addEventListener("input", () => {
+                    document.getElementById("cardCVV").value = document.getElementById("cardCVV").value.replace(/\D/g, '').slice(0, 4);
+                    document.getElementById("confirmPaymentButton").disabled = !validateCardForm();
+                });
+
+                togglePaymentForm();
+            } catch (error) {
+                console.error('Error initializing payment page:', error);
+                showNotification('เกิดข้อผิดพลาด', `ไม่สามารถโหลดหน้าการชำระเงินได้: ${error.message}`);
+                setTimeout(() => window.location.href = 'index.html', 2000);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Back to Booking
+        document.getElementById("backToBookingButton").addEventListener("click", () => {
+            window.location.href = 'index.html';
+        });
+
+        // Cancel Booking
+        document.getElementById("cancelBookingButton").addEventListener("click", async () => {
+            if (!confirm('ยืนยันการยกเลิกการจองนี้?')) return;
+            try {
+                showLoading(true);
+                const bookingsResponse = await fetch('http://localhost:3000/bookings');
+                if (!bookingsResponse.ok) throw new Error('Failed to fetch bookings');
+                const bookings = await bookingsResponse.json();
+                const userBookings = bookings.filter(b => 
+                    b.user_id === currentUser.user_id && 
+                    bookingData.booth_ids.includes(b.booth_id) && 
+                    b.booking_status === 'pending'
+                );
+
+                for (const booking of userBookings) {
+                    await fetch(`http://localhost:3000/bookings/${booking.booking_id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ...booking, booking_status: 'cancelled', payment_status: 'cancelled' })
+                    });
+
+                    const boothResponse = await fetch(`http://localhost:3000/booths/${booking.booth_id}`);
+                    if (!boothResponse.ok) throw new Error(`Failed to fetch booth ${booking.booth_id}`);
+                    const booth = await boothResponse.json();
+                    await fetch(`http://localhost:3000/booths/${booking.booth_id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ location: booth.location, status: 'available' })
+                    });
+                }
+
+                localStorage.removeItem('bookingData');
+                showNotification('สำเร็จ', 'ยกเลิกการจองเรียบร้อย');
+                setTimeout(() => window.location.href = 'index.html', 2000);
+            } catch (error) {
+                console.error('Error cancelling booking:', error);
+                showNotification('เกิดข้อผิดพลาด', `ไม่สามารถยกเลิกการจองได้: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // Confirm Payment
+        document.getElementById("confirmPaymentButton").addEventListener("click", async () => {
+            try {
+                showLoading(true);
+                const method = document.querySelector('input[name="paymentMethod"]:checked').value;
+                const bookingsResponse = await fetch('http://localhost:3000/bookings');
+                if (!bookingsResponse.ok) throw new Error('Failed to fetch bookings');
+                const bookings = await bookingsResponse.json();
+                const userBookings = bookings.filter(b => 
+                    b.user_id === currentUser.user_id && 
+                    bookingData.booth_ids.includes(b.booth_id) && 
+                    b.booking_status === 'pending'
+                );
+
+                if (method === "card") {
+                    if (!validateCardForm()) {
+                        showNotification('ข้อผิดพลาด', 'กรุณากรอกข้อมูลบัตรเครดิตให้ถูกต้อง');
+                        return;
+                    }
+                    showNotification('สำเร็จ', 'การชำระด้วยบัตรเครดิตเสร็จสิ้น (ซิมูเลต)');
+                } else {
+                    showNotification('คำเตือน', 'กรุณาสแกน QR Code และยืนยันการชำระผ่านธนาคาร');
+                }
+
+                for (const booking of userBookings) {
+                    await fetch(`http://localhost:3000/bookings/${booking.booking_id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ...booking, payment_status: 'paid' })
+                    });
+                }
+
+                localStorage.removeItem('bookingData');
+                setTimeout(() => window.location.href = 'index.html', 2000);
+            } catch (error) {
+                console.error('Error confirming payment:', error);
+                showNotification('เกิดข้อผิดพลาด', `ไม่สามารถยืนยันการชำระเงินได้: ${error.message}`);
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        // Logout
+        document.getElementById("logoutButton").addEventListener("click", () => {
+            localStorage.removeItem('user');
+            localStorage.removeItem('bookingData');
+            window.location.href = 'index.html';
+        });
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', initializePaymentPage);
+    </script>
+</body>
+</html>
