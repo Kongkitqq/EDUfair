@@ -8,28 +8,32 @@ const axios = require('axios');
 const bcrypt = require('bcrypt');
 const NodeCache = require('node-cache');
 const sanitizeHtml = require('sanitize-html');
-const cors = require('cors'); // เพิ่มบรรทัดนี้
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 const CACHE_TTL = 24 * 60 * 60; // Cache for 24 hours
 const cache = new NodeCache({ stdTTL: CACHE_TTL });
 
-// Database configuration for Render
+const cors = require('cors');
+
+// Database configuration
 const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false } // Required for Render's PostgreSQL
+    user: 'edufair',
+    host: 'eilapgsql.in.psu.ac.th',
+    database: 'edufair',
+    password: 'n8&U{s{332',
+    port: 5432,
 });
-
-// Middleware
-app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
-
-// CORS configuration (adjust origin for production)
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*', // Use environment variable or allow all for now
+    origin: 'http://127.0.0.1:5502',
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
+app.use('/uploads', express.static(path.join(__dirname, 'public/uploads')));
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Ensure uploads directory exists
 const uploadDir = path.join(__dirname, 'public', 'uploads');
@@ -88,18 +92,18 @@ app.post('/setup', async (req, res, next) => {
                 institute_name TEXT PRIMARY KEY,
                 type_id TEXT REFERENCES Type(type_id)
             );
-            CREATE TABLE IF NOT EXISTS "User" (
+            CREATE TABLE IF       NOT EXISTS "User" (
                 user_id TEXT PRIMARY KEY,
                 username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
                 role TEXT NOT NULL DEFAULT 'user',
-                full_name TEXT,
+                full_name TEXT, -- Changed from name
                 email TEXT UNIQUE NOT NULL,
                 phone TEXT,
-                organization_phone TEXT,
+                organization_phone TEXT, -- Changed from fax
                 institute_name TEXT REFERENCES Institute(institute_name),
                 position TEXT,
-                affiliation TEXT,
+                affiliation TEXT, -- Changed from department
                 profile_image TEXT
             );
             CREATE TABLE IF NOT EXISTS Booth (
@@ -160,13 +164,15 @@ app.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
         }
         const user = result.rows[0];
-        // ใช้ bcrypt ตรวจสอบ password (แทนการเปรียบเทียบ plaintext)
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            console.log('Login failed: Incorrect password');
+        if (password !== user.password) {
+            console.log('Login failed: Incorrect password', {
+                inputPassword: password,
+                storedPassword: user.password
+            });
             return res.status(401).json({ error: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง' });
         }
         console.log('Login successful:', { username, role: user.role });
+        // ลบ password ออกจาก response
         const { password: _, ...userWithoutPassword } = user;
         res.json({ message: 'ล็อกอินสำเร็จ', user: userWithoutPassword });
     } catch (err) {
@@ -174,7 +180,6 @@ app.post('/login', async (req, res) => {
         res.status(500).json({ error: 'เกิดข้อผิดพลาดในการล็อกอิน: ' + err.message });
     }
 });
-
 // GET: Fetch user data
 app.get('/user', sanitizeInput, async (req, res, next) => {
     const { user_id } = req.query;
@@ -218,7 +223,7 @@ app.put('/user', sanitizeInput, async (req, res, next) => {
             values.push(email);
         }
         if (password) {
-            const hashedPassword = await bcrypt.hash(password, 10); // Hash password
+            const hashedPassword = await bcrypt.hash(password, 10);
             updates.push(`password = $${index++}`);
             values.push(hashedPassword);
         }
@@ -352,8 +357,9 @@ app.post('/register', upload.single('profile_image'), sanitizeInput, async (req,
             return res.status(400).json({ error: 'สถาบันที่เลือกไม่มีอยู่ในระบบ' });
         }
 
-        // Hash password with bcrypt
-        const hashedPassword = await bcrypt.hash(password, 10); // Secure password hashing
+        // Use plaintext password (WARNING: Not secure)
+        console.log('Storing plaintext password (insecure)');
+        const storedPassword = password; // เก็บรหัสผ่านแบบ plaintext
 
         // Insert user
         console.log('Inserting user:', { username, email, full_name, phone, organization_phone, institute_name, position, affiliation, profile_image });
@@ -361,7 +367,7 @@ app.post('/register', upload.single('profile_image'), sanitizeInput, async (req,
                       'VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *';
         const values = [
             username,
-            hashedPassword,
+            storedPassword,
             'user',
             full_name,
             email,
@@ -686,8 +692,8 @@ app.post('/booths', sanitizeInput, async (req, res, next) => {
         }
 
         // ตรวจสอบรูปแบบ booth_id
-        if (!booth_id.match(/^B\d{3}$/)) {
-            return res.status(400).json({ error: 'รหัสบูธต้องอยู่ในรูปแบบ Bxxx (เช่น B001)' });
+        if (!booth_id.match(/^[A-Z][0-9]{3}$/)) {
+            return res.status(400).json({ error: 'รหัสบูธต้องอยู่ในรูปแบบ Xxxx (เช่น A003, B123)' });
         }
 
         // เพิ่มบูธ
