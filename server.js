@@ -18,12 +18,8 @@ const cors = require('cors');
 
 // Database configuration
 const pool = new Pool({
-    user: process.env.DB_USER,
-    host: process.env.DB_HOST,
-    database: process.env.DB_NAME,
-    password: process.env.DB_PASSWORD,
-    port: process.env.DB_PORT,
-    ssl: process.env.DB_SSL === 'true'
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
 });
 app.use(cors({
 origin: ['http://internal.psu.ac.th', 'https://internal.psu.ac.th'],
@@ -99,18 +95,18 @@ app.post('/setup', async (req, res, next) => {
                 institute_name TEXT PRIMARY KEY,
                 type_id TEXT REFERENCES Type(type_id)
             );
-            CREATE TABLE IF       NOT EXISTS "User" (
+            CREATE TABLE IF NOT EXISTS "User" (
                 user_id TEXT PRIMARY KEY,
                 username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
                 role TEXT NOT NULL DEFAULT 'user',
-                full_name TEXT, -- Changed from name
+                full_name TEXT,
                 email TEXT UNIQUE NOT NULL,
                 phone TEXT,
-                organization_phone TEXT, -- Changed from fax
+                organization_phone TEXT,
                 institute_name TEXT REFERENCES Institute(institute_name),
                 position TEXT,
-                affiliation TEXT, -- Changed from department
+                affiliation TEXT,
                 profile_image TEXT
             );
             CREATE TABLE IF NOT EXISTS Booth (
@@ -141,6 +137,22 @@ app.post('/setup', async (req, res, next) => {
                 payment_status TEXT NOT NULL
             );
         `);
+
+        // เพิ่มข้อมูลเริ่มต้น (ตัวอย่าง)
+        await client.query(`
+            INSERT INTO "User" (user_id, username, password, role, full_name, email) 
+            VALUES ('admin-001', 'admin', 'hashed_password', 'admin', 'Admin User', 'admin@edufair.com')
+            ON CONFLICT (user_id) DO NOTHING;
+
+            INSERT INTO Config (booth_max) 
+            VALUES (50)
+            ON CONFLICT (config_id) DO NOTHING;
+
+            INSERT INTO Booth (booth_id, location, status)
+            VALUES ('booth-001', 'A1', 'available')
+            ON CONFLICT (booth_id) DO NOTHING;
+        `);
+
         await client.query('COMMIT');
         console.log('Database setup completed');
         res.status(201).json({ message: 'Database initialized' });
